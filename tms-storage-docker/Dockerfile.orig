@@ -1,0 +1,43 @@
+FROM fedora:24
+# Thermostat Storage Image.
+#
+# Environment:
+#  * $THERMOSTAT_AGENT_USERNAME  - User name for thermostat agents to use
+#                                  for connecting to storage.
+#  * $THERMOSTAT_AGENT_PASSWORD  - Password for thermostat agents to use
+#                                  for connecting to storage.
+#  * $THERMOSTAT_CLIENT_USERNAME - User name for thermostat clients to
+#                                  use for connecting to storage
+#  * $THERMOSTAT_CLIENT_PASSWORD - PASSWORD for thermostat clients to
+#                                  use for connecting to storage
+#  * $THERMOSTAT_DB_PORT         - The port to listen on
+#  * $MONGO_USERNAME             - User name to connect to the mongodb backend
+#  * $MONGO_PASSWORD             - Password to connect to the mongodb backend
+#  * $MONGO_URL                  - The mongodb url to connect to
+
+
+LABEL Name="thermostat-19-storage-docker" \
+      Version="1.99" \ 
+      Release="1.0" \
+      Architecture="x86_64"
+
+RUN dnf install -y mercurial maven mongodb mongodb-server java-1.8.0-openjdk-devel libsecret-devel make gcc gtk2-devel autoconf automake libtool procps-ng passwd --setopt=deltarpm=0 && dnf clean all
+
+RUN dnf update -y --setopt=deltarpm=0 && dnf clean all
+
+ENV THERMOSTAT_VERSION=1.99 \
+    HOME=/root \
+    USER=root
+
+ENV THERMOSTAT_HOME=/root/thermostat/distribution/target/image
+ENV THERMOSTAT_DB_PORT=8999
+ENV USER_THERMOSTAT_HOME=/root/.thermostat
+EXPOSE ${THERMOSTAT_DB_PORT}
+
+COPY __tms__ /root/thermostat
+RUN cd /root/thermostat && mvn -Dmaven.test.skip=true clean integration-test
+
+ADD root /
+
+ENTRYPOINT ["container-entrypoint"]
+CMD [ "run-thermostat-storage" ]
