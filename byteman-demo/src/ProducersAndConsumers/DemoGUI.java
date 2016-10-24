@@ -5,7 +5,6 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRootPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingWorker;
 
@@ -112,8 +111,7 @@ public class DemoGUI extends JFrame {
         /* Set up the frame dimensions and behavior */
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         this.setLocation((int) screenSize.getWidth() / 2, (int) screenSize.getHeight() / 2);
-        this.setSize(400, 300);
-        getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
+        this.setSize(400, 700);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setVisible(true);
     }
