@@ -31,9 +31,10 @@ class Consumer implements Runnable {
         }
     }
 
-    private void removeItem() {
+    private synchronized void removeItem() {
         numConsumed++;
-        System.out.printf("CONSUMER has consumed item #%d: %d\n", numConsumed, (Integer) queue.remove(0));
+        queue.remove(0);
+        DemoGUI.getInstance().appendText("CONSUMER has consumed item #" + numConsumed + " \n");
         queue.notifyAll();
     }
 

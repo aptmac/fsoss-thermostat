@@ -1,8 +1,6 @@
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static java.lang.Thread.sleep;
-
 class Producer implements Runnable {
     private final ArrayList queue;
     private final int MAX;
@@ -16,7 +14,6 @@ class Producer implements Runnable {
 
     @Override
     public void run() {
-        Thread thisThread = Thread.currentThread();
         while (true) {
             synchronized (queue) {
                 while (queue.size() == MAX) {
