@@ -1,0 +1,13 @@
+A simple hello world webapp that runs using docker.
+
+Build using:
+
+    $ make build
+
+Run as:
+
+    $ make run-interactive
+
+View the web application using:
+
+    $ firefox http://127.0.0.1:4567
