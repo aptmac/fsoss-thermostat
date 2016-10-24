@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="byteman-demo:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/byteman_demo_jar</output-path>
+    <root id="archive" name="byteman-demo.jar">
+      <element id="module-output" name="byteman-demo" />
+    </root>
+  </artifact>
+</component>

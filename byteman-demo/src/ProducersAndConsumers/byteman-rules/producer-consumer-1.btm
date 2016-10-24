@@ -1,0 +1,85 @@
+###########################
+# Counter increment rules #
+###########################
+RULE count producer sleep method invocations
+CLASS Producer
+METHOD sleep
+AT ENTRY
+IF true
+DO
+incrementCounter("producer-sleep-counter")
+ENDRULE
+
+RULE count producer addItem method invocations
+CLASS Producer
+METHOD addItem
+AT ENTRY
+IF true
+DO
+incrementCounter("producer-add-counter")
+ENDRULE
+
+RULE count consumer sleep method invocations
+CLASS Consumer
+METHOD sleep
+AT ENTRY
+IF true
+DO
+incrementCounter("consumer-sleep-counter")
+ENDRULE
+
+RULE count consumer removeItem method invocations
+CLASS Consumer
+METHOD removeItem
+AT ENTRY
+IF true
+DO
+incrementCounter("consumer-remove-counter")
+ENDRULE
+
+####################################
+# Send metrics to Thermostat rules #
+####################################
+RULE send producer sleep method invocations to thermostat
+CLASS Producer
+METHOD sleep
+AT ENTRY
+BIND counterValue: int = readCounter("producer-sleep-counter")
+HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
+IF true
+DO
+send("producer", "1 - producer sleep()", counterValue);
+ENDRULE
+
+RULE send producer addItem method invocations to thermostat
+CLASS Producer
+METHOD addItem
+AT ENTRY
+BIND counterValue: int = readCounter("producer-add-counter")
+HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
+IF true
+DO
+send("producer", "1 - addItem()", counterValue);
+ENDRULE
+
+RULE send consumer sleep method invocations to thermostat
+CLASS Consumer
+METHOD sleep
+AT ENTRY
+BIND counterValueSleep: int = readCounter("consumer-sleep-counter")
+HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
+IF true
+DO
+send("consumer", "1 - consumer sleep()", counterValueSleep);
+ENDRULE
+
+RULE send consumer removeItem method invocations to thermostat
+CLASS Consumer
+METHOD removeItem
+AT ENTRY
+BIND counterValue: int = readCounter("consumer-remove-counter")
+HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
+IF true
+DO
+send("consumer", "1 - removeItem()", counterValue);
+ENDRULE
