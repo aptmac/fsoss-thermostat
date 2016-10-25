@@ -1,0 +1,1538 @@
+# HG changeset patch
+# User Alex Macdonald <almacdon@redhat.com>
+# Date 1477060202 14400
+#      Fri Oct 21 10:30:02 2016 -0400
+# Node ID ba8debe7393e300d15277b4e7d093dc3ca226337
+# Parent  313fc27aa5571a4b7e136e6aac81267b32a008d4
+[mq]: byteman-metrics-patch-8
+
+diff --git a/common/core/src/main/java/com/redhat/thermostat/common/cli/BorderedTableRenderer.java b/common/core/src/main/java/com/redhat/thermostat/common/cli/BorderedTableRenderer.java
+new file mode 100644
+--- /dev/null
++++ b/common/core/src/main/java/com/redhat/thermostat/common/cli/BorderedTableRenderer.java
+@@ -0,0 +1,123 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.common.cli;
++
++import com.redhat.thermostat.common.utils.StringUtils;
++
++import java.io.ByteArrayOutputStream;
++import java.io.PrintStream;
++import java.util.ArrayList;
++import java.util.Arrays;
++
++/**
++ * A {@link TableRenderer} that adds column and row dividers
++ * to text-based tables
++ */
++public class BorderedTableRenderer extends TableRenderer {
++
++    private StringBuilder format;
++
++    public BorderedTableRenderer(int numColumns) {
++        super(numColumns);
++    }
++
++    public BorderedTableRenderer(int numColumns, int minWidth) {
++        super(numColumns, minWidth);
++    }
++
++    /* can input an array with a single hyphen at each index to neatly print a divider */
++    private boolean checkForDivider(String[] line) {
++        String prev = "-";
++        for(int i = 0; i < line.length; i++) {
++            if (!line[i].equals(prev)) {
++                return false;
++            }
++            prev = line[i];
++        }
++        return true;
++    }
++
++    @Override
++    public void render(PrintStream out) {
++        printHeaderWithBorders(out, header);
++        sortLines();
++        for (int i = 0; i < lines.size(); i++) {
++            String[] line = lines.get(i);
++            if (checkForDivider(line)) {
++                if (i != lines.size() - 1) {
++                    printDivider(out);
++                }
++            } else {
++                renderLineWithBorders(out, line);
++            }
++        }
++        printDivider(out);
++    }
++
++    /* prints horizontal line dividers to separate header from table entries */
++    private void printDivider(PrintStream out) {
++        StringBuilder divider = new StringBuilder();
++        divider.append("+");
++        for (int i = 0; i < numColumns; i++) {
++            int width = maxColumnWidths[i];
++            String dashes = StringUtils.repeat("-", width + 2);
++            divider.append(dashes + "+");
++        }
++        divider.append("\n");
++        out.print(divider.toString());
++    }
++
++    private void printHeaderWithBorders(PrintStream out, String[] header) {
++        format = new StringBuilder();
++        for (int i = 0; i < numColumns; i++) {
++            int width = maxColumnWidths[i];
++            String dashes = StringUtils.repeat("-", width + 2);
++            format.append("| %-" + width + "s ");
++        }
++        format.append("|%n");
++        printDivider(out);
++        if (!(header == null)) {
++            out.printf(format.toString(), header);
++            printDivider(out);
++        }
++    }
++
++    private void renderLineWithBorders(PrintStream out, String... line) {
++        out.printf(format.toString(), line);
++    }
++
++}
+diff --git a/common/core/src/main/java/com/redhat/thermostat/common/cli/TableRenderer.java b/common/core/src/main/java/com/redhat/thermostat/common/cli/TableRenderer.java
+--- a/common/core/src/main/java/com/redhat/thermostat/common/cli/TableRenderer.java
++++ b/common/core/src/main/java/com/redhat/thermostat/common/cli/TableRenderer.java
+@@ -45,14 +45,14 @@
+ 
+ public class TableRenderer {
+ 
+-    private List<String[]> lines;
+-    private String[] header;
++    protected List<String[]> lines;
++    protected String[] header;
+     private List<Integer> columnSortingQueue = new ArrayList<>();
+-    private int[] maxColumnWidths;
+-    private int lastPrintedLine = -1;
++    protected int[] maxColumnWidths;
++    protected int lastPrintedLine = -1;
+ 
+-    private int numColumns;
+-    private int minWidth;
++    protected int numColumns;
++    protected int minWidth;
+ 
+     public TableRenderer(int numColumns) {
+         this(numColumns, 1);
+@@ -101,7 +101,7 @@
+         }
+     }
+ 
+-    private void sortLines() {
++    protected void sortLines() {
+         Collections.sort(lines, new Comparator<String[]>() {
+             @Override
+             public int compare(final String[] lines1, final String[] lines2) {
+diff --git a/common/core/src/test/java/com/redhat/thermostat/common/cli/BorderedTableRendererTest.java b/common/core/src/test/java/com/redhat/thermostat/common/cli/BorderedTableRendererTest.java
+new file mode 100644
+--- /dev/null
++++ b/common/core/src/test/java/com/redhat/thermostat/common/cli/BorderedTableRendererTest.java
+@@ -0,0 +1,116 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.common.cli;
++
++import org.junit.After;
++import org.junit.Before;
++import org.junit.Test;
++
++import java.io.ByteArrayOutputStream;
++
++import static org.junit.Assert.assertEquals;
++
++public class BorderedTableRendererTest {
++
++    private BorderedTableRenderer btr;
++    private ByteArrayOutputStream out;
++
++    @Before
++    public void setUp() {
++        btr = new BorderedTableRenderer(3);
++        out = new ByteArrayOutputStream();
++    }
++
++    @After
++    public void tearDown() {
++        out = null;
++        btr = null;
++    }
++
++    @Test
++    public void testHeaderWithBorders() {
++        String[] header = {"Foo", "Bar", "Baz"};
++        btr.printHeader(header);
++        btr.render(out);
++        assertEquals("+-----+-----+-----+\n" +
++                "| Foo | Bar | Baz |\n" +
++                "+-----+-----+-----+\n" +
++                "+-----+-----+-----+\n", new String(out.toByteArray()));
++    }
++
++    @Test
++    public void testRenderTableWithBorders() {
++        btr.printHeader("HEADER", "TITLE", "SUBTITLE");
++        btr.printLine("hello", "fluff", "world");
++        btr.printLine("looooooong", "f1", "foobar");
++        btr.printLine("f2", "shoooooooooooort", "poo");
++        btr.render(out);
++        assertEquals("+------------+------------------+----------+\n" +
++                "| HEADER     | TITLE            | SUBTITLE |\n" +
++                "+------------+------------------+----------+\n" +
++                "| hello      | fluff            | world    |\n" +
++                "| looooooong | f1               | foobar   |\n" +
++                "| f2         | shoooooooooooort | poo      |\n" +
++                "+------------+------------------+----------+\n", new String(out.toByteArray()));
++    }
++
++    @Test
++    public void testRenderTableContinuous() {
++        btr.printHeader("HEADER", "TITLE", "SUBTITLE");
++        btr.printLine("hello", "fluff", "world");
++        btr.printLine("looooooong", "f1", "foobar");
++        btr.printLine("f2", "shoooooooooooort", "poo");
++        btr.render(out);
++        assertEquals("+------------+------------------+----------+\n" +
++                "| HEADER     | TITLE            | SUBTITLE |\n" +
++                "+------------+------------------+----------+\n" +
++                "| hello      | fluff            | world    |\n" +
++                "| looooooong | f1               | foobar   |\n" +
++                "| f2         | shoooooooooooort | poo      |\n" +
++                "+------------+------------------+----------+\n", new String(out.toByteArray()));
++        btr.printLine("newwwwwwwwwwww", "line", "added");
++        btr.render(out = new ByteArrayOutputStream());
++        assertEquals("+----------------+------------------+----------+\n" +
++                "| HEADER         | TITLE            | SUBTITLE |\n" +
++                "+----------------+------------------+----------+\n" +
++                "| hello          | fluff            | world    |\n" +
++                "| looooooong     | f1               | foobar   |\n" +
++                "| f2             | shoooooooooooort | poo      |\n" +
++                "| newwwwwwwwwwww | line             | added    |\n" +
++                "+----------------+------------------+----------+\n", new String(out.toByteArray()));
++    }
++}
+\ No newline at end of file
+diff --git a/vm-byteman/client-cli/src/main/java/com/redhat/thermostat/vm/byteman/client/cli/BytemanControlCommand.java b/vm-byteman/client-cli/src/main/java/com/redhat/thermostat/vm/byteman/client/cli/BytemanControlCommand.java
+--- a/vm-byteman/client-cli/src/main/java/com/redhat/thermostat/vm/byteman/client/cli/BytemanControlCommand.java
++++ b/vm-byteman/client-cli/src/main/java/com/redhat/thermostat/vm/byteman/client/cli/BytemanControlCommand.java
+@@ -43,9 +43,17 @@
+ import java.io.PrintStream;
+ import java.net.InetSocketAddress;
+ import java.nio.charset.Charset;
++import java.text.DateFormat;
++import java.util.ArrayList;
+ import java.util.Collections;
++import java.util.HashMap;
++import java.util.HashSet;
+ import java.util.List;
+ import java.util.Map;
++import java.util.Map.Entry;
++import java.util.Set;
++import java.util.SortedSet;
++import java.util.TreeSet;
+ import java.util.concurrent.CountDownLatch;
+ import java.util.concurrent.TimeUnit;
+ 
+@@ -53,6 +61,7 @@
+ import com.redhat.thermostat.client.command.RequestQueue;
+ import com.redhat.thermostat.common.cli.AbstractCompleterCommand;
+ import com.redhat.thermostat.common.cli.Arguments;
++import com.redhat.thermostat.common.cli.BorderedTableRenderer;
+ import com.redhat.thermostat.common.cli.CliCommandOption;
+ import com.redhat.thermostat.common.cli.Command;
+ import com.redhat.thermostat.common.cli.CommandContext;
+@@ -106,13 +115,20 @@
+     static final String STATUS_ACTION = "status";
+     static final String SHOW_ACTION = "show-metrics";
+     private static final String RULES_FILE_OPTION = "rules";
++    private static final String NAME_QUERY_OPTION = "show";
+     private static final String NO_RULES_LOADED = "<no-loaded-rules>";
+     private static final String UNSET_PORT = "<unset>";
+     private static final Charset UTF_8_CHARSET = Charset.forName("UTF-8");
++    private static final String[] DIVIDER = {"-", "-", "-", "-"};
+ 
+     
+     private final DependencyServices depServices = new DependencyServices();
+ 
++    private BorderedTableRenderer table;
++
++    // package private for testing
++    static DateFormat metricsDateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.LONG);
++
+     @Override
+     public Map<CliCommandOption, ? extends TabCompleter> getOptionCompleters() {
+         if (!depServices.hasService(FileNameTabCompleter.class)) {
+@@ -166,7 +182,12 @@
+             showStatus(ctx, vmInfo, bytemanDao);
+             break;
+         case SHOW_ACTION:
+-            showMetrics(ctx, vmId, agentId, bytemanDao);
++            Arguments args = ctx.getArguments();
++            String nameQuery = translator.localize(LocaleResources.ALL_METRICS).getContents();
++            if (args.hasArgument(NAME_QUERY_OPTION)) {
++                nameQuery = args.getArgument(NAME_QUERY_OPTION);
++            }
++            showMetrics(ctx, vmId, agentId, bytemanDao, nameQuery);
+             break;
+         default:
+             throw new CommandException(translator.localize(LocaleResources.UNKNOWN_COMMAND, command));
+@@ -212,21 +233,57 @@
+         submitRequest(ctx, requestQueue, request);
+     }
+ 
++    private void printTableHeaders(BorderedTableRenderer table) {
++        List<String> header = new ArrayList<String>();
++        header.add(translator.localize(LocaleResources.HEADER_TIMESTAMP).getContents());
++        header.add(translator.localize(LocaleResources.HEADER_MARKER).getContents());
++        header.add(translator.localize(LocaleResources.HEADER_METRIC_NAME).getContents());
++        header.add(translator.localize(LocaleResources.HEADER_METRIC_VALUE).getContents());
++        table.printHeader(header.toArray(new String[header.size()]));
++    }
++
+     /* Show metrics retrieved via byteman rules */
+-    private void showMetrics(CommandContext ctx, VmId vmId, AgentId agentId, VmBytemanDAO bytemanDao) throws CommandException {
++    private void showMetrics(CommandContext ctx, VmId vmId, AgentId agentId, VmBytemanDAO bytemanDao, String nameQuery) throws CommandException {
+         // TODO: Make this query configurable with arguments
++        table = new BorderedTableRenderer(4);
++        printTableHeaders(table);
++        Set<String> metricsNamesSet = new HashSet<>();
++        SortedSet<String> sortedMetricNames;
++
+         long now = System.currentTimeMillis();
+         long from = now - TimeUnit.MINUTES.toMillis(5);
+         long to = now;
+         Range<Long> timeRange = new Range<Long>(from, to);
+         List<BytemanMetric> metrics = bytemanDao.findBytemanMetrics(timeRange, vmId, agentId);
+-        PrintStream output = ctx.getConsole().getOutput();
+         PrintStream out = ctx.getConsole().getOutput();
+         if (metrics.isEmpty()) {
+             out.println(translator.localize(LocaleResources.NO_METRICS_AVAILABLE, vmId.get()).getContents());
+         } else {
+-            for (BytemanMetric m: metrics) {
+-                output.println(m.getDataAsJson());
++            Map<String, Object> map = new HashMap<>();
++            for (BytemanMetric m : metrics) {
++                String timestamp = metricsDateFormat.format(m.getTimeStamp());
++                map = m.getDataAsMap();
++                for (Entry<String, Object> item: map.entrySet()) {
++                    Object metricsName = item.getKey();
++                    metricsNamesSet.add(metricsName.toString());
++                    Object metricsValue = item.getValue();
++                    if (nameQuery.equals(translator.localize(LocaleResources.ALL_METRICS).getContents()) || metricsName.equals(nameQuery)) {
++                        table.printLine(new String[] {timestamp, m.getMarker(), metricsName.toString(), metricsValue.toString()});
++                    }
++                }
++                /* print a divider to group metrics in the table if viewing multiple fields */
++                if (nameQuery.equals(translator.localize(LocaleResources.ALL_METRICS).getContents())) {
++                    table.printLine(DIVIDER);
++                }
++            }
++            sortedMetricNames = new TreeSet<>(metricsNamesSet);
++            if (sortedMetricNames.contains(nameQuery) || nameQuery.equals(translator.localize(LocaleResources.ALL_METRICS).getContents())) {
++                out.println(translator.localize(LocaleResources.CURRENT_METRICS_DISPLAYED, nameQuery).getContents());
++                out.println(translator.localize(LocaleResources.AVAILABLE_METRICS, sortedMetricNames.toString()).getContents());
++                table.render(out);
++            } else {
++                out.println(translator.localize(LocaleResources.NO_METRICS_DATA, nameQuery).getContents());
++                out.println(translator.localize(LocaleResources.AVAILABLE_METRICS, sortedMetricNames.toString()).getContents());
+             }
+         }
+     }
+diff --git a/vm-byteman/client-cli/src/main/java/com/redhat/thermostat/vm/byteman/client/cli/internal/LocaleResources.java b/vm-byteman/client-cli/src/main/java/com/redhat/thermostat/vm/byteman/client/cli/internal/LocaleResources.java
+--- a/vm-byteman/client-cli/src/main/java/com/redhat/thermostat/vm/byteman/client/cli/internal/LocaleResources.java
++++ b/vm-byteman/client-cli/src/main/java/com/redhat/thermostat/vm/byteman/client/cli/internal/LocaleResources.java
+@@ -55,6 +55,14 @@
+     ERROR_NO_STATUS,
+     BYTEMAN_STATUS_MSG,
+     REQUEST_SUCCESS,
++    HEADER_TIMESTAMP,
++    HEADER_MARKER,
++    HEADER_METRIC_NAME,
++    HEADER_METRIC_VALUE,
++    ALL_METRICS,
++    AVAILABLE_METRICS,
++    NO_METRICS_DATA,
++    CURRENT_METRICS_DISPLAYED,
+     ;
+ 
+     static final String RESOURCE_BUNDLE = LocaleResources.class.getPackage().getName() + ".strings";
+diff --git a/vm-byteman/client-cli/src/main/resources/com/redhat/thermostat/vm/byteman/client/cli/internal/strings.properties b/vm-byteman/client-cli/src/main/resources/com/redhat/thermostat/vm/byteman/client/cli/internal/strings.properties
+--- a/vm-byteman/client-cli/src/main/resources/com/redhat/thermostat/vm/byteman/client/cli/internal/strings.properties
++++ b/vm-byteman/client-cli/src/main/resources/com/redhat/thermostat/vm/byteman/client/cli/internal/strings.properties
+@@ -18,3 +18,11 @@
+  {2} \n\
+  ---------------
+ REQUEST_SUCCESS = Request submitted successfully.
++HEADER_TIMESTAMP =  Timestamp
++HEADER_MARKER = Marker
++HEADER_METRIC_NAME = Name
++HEADER_METRIC_VALUE = Value
++ALL_METRICS = all
++AVAILABLE_METRICS = Available metrics: {0}
++NO_METRICS_DATA = No metrics data available for: {0}
++CURRENT_METRICS_DISPLAYED =  Currently viewing metrics for: {0}
+diff --git a/vm-byteman/client-cli/src/test/java/com/redhat/thermostat/vm/byteman/client/cli/BytemanControlCommandTest.java b/vm-byteman/client-cli/src/test/java/com/redhat/thermostat/vm/byteman/client/cli/BytemanControlCommandTest.java
+--- a/vm-byteman/client-cli/src/test/java/com/redhat/thermostat/vm/byteman/client/cli/BytemanControlCommandTest.java
++++ b/vm-byteman/client-cli/src/test/java/com/redhat/thermostat/vm/byteman/client/cli/BytemanControlCommandTest.java
+@@ -61,13 +61,17 @@
+ import java.util.Collections;
+ import java.util.List;
+ import java.util.Map;
++import java.util.TimeZone;
++
+ import java.util.concurrent.CountDownLatch;
+ 
+ import com.redhat.thermostat.common.cli.CliCommandOption;
+ import com.redhat.thermostat.common.cli.FileNameTabCompleter;
+ import com.redhat.thermostat.common.cli.TabCompleter;
+ import com.redhat.thermostat.vm.byteman.client.cli.BytemanControlCommand;
++import org.junit.AfterClass;
+ import org.junit.Before;
++import org.junit.BeforeClass;
+ import org.junit.Test;
+ import org.mockito.ArgumentCaptor;
+ 
+@@ -105,7 +109,7 @@
+     private static final String EMPTY_STRING = "";
+     private static final int SOME_LISTEN_PORT = 333;
+     private static final InetSocketAddress REQUEST_QUEUE_ADDRESS = mock(InetSocketAddress.class);
+-    private BytemanControlCommand command;
++    private static BytemanControlCommand command;
+     private TestCommandContextFactory ctxFactory;
+     
+     @Before
+@@ -226,13 +230,27 @@
+     
+     @Test
+     public void testShowMetricsActionWithMetrics() throws CommandException {
++        command.metricsDateFormat.setTimeZone(TimeZone.getTimeZone("EST"));
+         String metricData1 = "{ \"foo\": \"bar\" }";
+         String metricData2 = "{ \"foo2\": -300 }";
+-        String expectedStdOut = String.format("%s\n%s\n", metricData1, metricData2);
++        long timestamp = 1_234_567_890_111L;
++        String expectedStdOut = "Currently viewing metrics for: all\n" +
++            "Available metrics: [foo, foo2]\n" +
++            "+----------------------------+---------+------+--------+\n" +
++            "| Timestamp                  | Marker  | Name | Value  |\n" +
++            "+----------------------------+---------+------+--------+\n" +
++            "| 13-Feb-2009 6:31:30 EST PM | marker1 | foo  | bar    |\n" +
++            "+----------------------------+---------+------+--------+\n" +
++            "| 13-Feb-2009 6:31:30 EST PM | marker2 | foo2 | -300.0 |\n" +
++            "+----------------------------+---------+------+--------+\n";
+         BytemanMetric metric1 = new BytemanMetric();
++        metric1.setMarker("marker1");
+         metric1.setData(metricData1);
++        metric1.setTimeStamp(timestamp);
+         BytemanMetric metric2 = new BytemanMetric();
++        metric2.setMarker("marker2");
+         metric2.setData(metricData2);
++        metric2.setTimeStamp(timestamp);
+         List<BytemanMetric> returnedList = Arrays.asList(metric1, metric2);
+         doShowMetricsTest(returnedList, expectedStdOut);
+     }
+diff --git a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/LocaleResources.java b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/LocaleResources.java
+--- a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/LocaleResources.java
++++ b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/LocaleResources.java
+@@ -55,6 +55,12 @@
+     LABEL_LOCAL_RULE,
+     LABEL_INJECTED_RULE,
+     IMPORT_RULE,
++    COMBO_ALL_METRICS,
++    LABEL_SELECT_METRICS,
++    HEADER_TIMESTAMP,
++    HEADER_MARKER,
++    HEADER_METRIC_NAME,
++    HEADER_METRIC_VALUE,
+     FILTER,
+     FILTER_VALUE_LABEL,
+     NO_FILTER_NAME,
+diff --git a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/MetricFieldValueComparator.java b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/MetricFieldValueComparator.java
+new file mode 100644
+--- /dev/null
++++ b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/MetricFieldValueComparator.java
+@@ -0,0 +1,62 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.vm.byteman.client.swing.internal;
++
++import java.util.Comparator;
++
++public class MetricFieldValueComparator implements Comparator {
++
++    public int compare(Object o1, Object o2) {
++
++        if (o1 == null || o2 == null) {
++            throw new NullPointerException();
++        }
++
++        String str1 = o1.toString();
++        String str2 = o2.toString();
++
++        int result;
++
++        try {
++            result = Double.compare(Double.parseDouble(str1), Double.parseDouble(str2));
++        } catch (NumberFormatException nfe) {
++            result = str1.compareTo(str2);
++        }
++
++        return result;
++    }
++}
+\ No newline at end of file
+diff --git a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/SwingVmBytemanView.java b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/SwingVmBytemanView.java
+--- a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/SwingVmBytemanView.java
++++ b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/SwingVmBytemanView.java
+@@ -45,6 +45,8 @@
+ import java.awt.GridBagConstraints;
+ import java.awt.GridBagLayout;
+ import java.awt.Insets;
++import java.awt.event.MouseAdapter;
++import java.awt.event.MouseEvent;
+ import java.beans.PropertyChangeEvent;
+ import java.beans.PropertyChangeListener;
+ import java.io.BufferedReader;
+@@ -57,13 +59,22 @@
+ import java.util.ArrayList;
+ import java.util.Arrays;
+ import java.util.Collections;
+-import java.util.Date;
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.HashSet;
+ import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.SortedSet;
++import java.util.TreeSet;
++import java.util.Map.Entry;
++import java.util.concurrent.Callable;
+ import java.util.Objects;
+ import java.util.concurrent.CopyOnWriteArrayList;
+ import java.util.logging.Level;
+ import java.util.logging.Logger;
+ 
++import javax.swing.DefaultComboBoxModel;
+ import javax.swing.JButton;
+ import javax.swing.JComboBox;
+ import javax.swing.JFileChooser;
+@@ -82,6 +93,9 @@
+ import javax.swing.event.ChangeEvent;
+ import javax.swing.event.ChangeListener;
+ import javax.swing.event.DocumentEvent;
++import javax.swing.table.JTableHeader;
++import javax.swing.table.TableColumnModel;
++import javax.swing.table.TableRowSorter;
+ import javax.swing.plaf.basic.BasicSplitPaneDivider;
+ import javax.swing.plaf.basic.BasicSplitPaneUI;
+ 
+@@ -93,7 +107,9 @@
+ import org.jfree.data.category.DefaultCategoryDataset;
+ import org.jfree.data.xy.XYDataset;
+ 
++import com.redhat.thermostat.client.swing.EdtHelper;
+ import com.redhat.thermostat.client.swing.IconResource;
++import com.redhat.thermostat.client.swing.NonEditableTableModel;
+ import com.redhat.thermostat.client.swing.SwingComponent;
+ import com.redhat.thermostat.client.swing.components.ActionToggleButton;
+ import com.redhat.thermostat.client.swing.components.FontAwesomeIcon;
+@@ -101,6 +117,7 @@
+ import com.redhat.thermostat.client.swing.components.Icon;
+ import com.redhat.thermostat.client.swing.components.ThermostatScrollPane;
+ import com.redhat.thermostat.client.swing.components.ThermostatTabbedPane;
++import com.redhat.thermostat.client.swing.components.ThermostatTable;
+ import com.redhat.thermostat.client.swing.components.ThermostatTextArea;
+ import com.redhat.thermostat.client.swing.components.experimental.RecentTimeControlPanel;
+ import com.redhat.thermostat.client.swing.components.experimental.RecentTimeControlPanel.UnitRange;
+@@ -109,6 +126,7 @@
+ import com.redhat.thermostat.client.swing.experimental.ComponentVisibilityNotifier;
+ import com.redhat.thermostat.common.ActionEvent;
+ import com.redhat.thermostat.common.ActionListener;
++import com.redhat.thermostat.common.Clock;
+ import com.redhat.thermostat.common.Duration;
+ import com.redhat.thermostat.common.utils.LoggingUtils;
+ import com.redhat.thermostat.shared.locale.LocalizedString;
+@@ -138,13 +156,24 @@
+     static final String RULES_INJECTED_TEXT_NAME = "RULES_INJECTED_TEXT";
+     static final String RULES_UNLOADED_TEXT_NAME = "RULES_UNLOADED_TEXT";
+     static final String METRICS_TEXT_NAME = "METRICS_TEXT";
++    static final String METRICS_COMBO_BOX_NAME = "METRICS_COMBO_BOX";
++    static final String METRICS_TABLE_NAME = "METRICS_TABLE";
+     
+     private String injectedRuleContent;
+     private String unloadedRuleContent;
+     private ThermostatChartPanel graphPanel;
+     private RecentTimeControlPanel graphTimeControlPanel;
+     private boolean generateRuleToggle;
+-    private final JTextArea metricsText;
++    private DefaultComboBoxModel comboModel;
++    private final JComboBox metricsComboBox;
++    private NonEditableTableModel tableModel;
++    private TableColumnModel columnModel;
++    private final ThermostatTable metricsTable;
++    private BytemanInjectState bytemanState;
++    private List<BytemanMetric> previousPayload = Collections.EMPTY_LIST;
++    private List<? extends javax.swing.RowSorter.SortKey> sortKey;
++    private Set<String> metricsNameSet;
++    private final int COLUMN_METRIC_VALUE = 3;
+     private final JTextArea unloadedRulesText;
+     private final JTextArea injectedRulesText;
+     private final JButton injectRuleButton;
+@@ -367,21 +396,57 @@
+         rulesPanel.add(buttonHolder, cRules);
+         
+         // Metrics tab
++        metricsNameSet = new HashSet<String>();
+         metricsPanel = new JPanel();
+         metricsPanel.setLayout(new GridBagLayout());
+-        metricsText = new ThermostatTextArea(EMPTY_STR);
+-        metricsText.setName(METRICS_TEXT_NAME);
+-        metricsText.setBackground(Color.WHITE);
+-        metricsText.setEditable(false);
+-        metricsText.setMargin(paddingInsets);
+         GridBagConstraints c = new GridBagConstraints();
++        c.fill = GridBagConstraints.HORIZONTAL;
++        c.gridx = 0;
++        c.gridy = 0;
++        c.weighty = yWeightRow0;
++        c.weightx = xWeightFullWidth;
++        // Setting up the ComboBox and refresh button
++        buttonHolder = new JPanel();
++        layout = new FlowLayout();
++        layout.setAlignment(FlowLayout.LEFT);
++        layout.setHgap(5);
++        layout.setVgap(0);
++        buttonHolder.setLayout(layout);
++        buttonHolder.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
++        JLabel metricsLabel = new JLabel(t.localize(LocaleResources.LABEL_SELECT_METRICS).getContents());
++        comboModel = setupComboModel();
++        metricsComboBox = new JComboBox();
++        metricsComboBox.setName(METRICS_COMBO_BOX_NAME);
++        updateComboBox(comboModel);
++        metricsComboBox.addActionListener(new java.awt.event.ActionListener() {
++            @Override
++            public void actionPerformed(java.awt.event.ActionEvent e) {
++                fireGenerateEvent(GenerateAction.GENERATE_TABLE);
++            }
++        });
++        buttonHolder.add(metricsLabel);
++        buttonHolder.add(metricsComboBox);
++        buttonHolder.setAlignmentX(Component.LEFT_ALIGNMENT);
++        metricsPanel.add(buttonHolder, c);
++        // setting up the Table
+         c.fill = GridBagConstraints.BOTH;
+         c.gridx = 0;
+-        c.gridy = 0;
+-        c.weighty = yWeightRow0 + yWeightRow1;
+-        c.weightx = xWeightFullWidth;
+-        c.insets = paddingInsets;
+-        JScrollPane metricsScroll = new ThermostatScrollPane(metricsText);
++        c.gridy = 1;
++        c.weighty = yWeightRow1;
++        tableModel = new NonEditableTableModel();
++        metricsTable = new ThermostatTable(tableModel);
++        metricsTable.setName(METRICS_TABLE_NAME);
++        final JTableHeader header = metricsTable.getTableHeader();
++        header.addMouseListener(new MouseAdapter() {
++            @Override
++            public void mouseClicked(MouseEvent e) {
++                if (metricsTable.getColumnCount() > 1) {
++                        sortKey = metricsTable.getRowSorter().getSortKeys();
++                }
++            }
++        });
++        metricsPanel.add(metricsTable, c);
++        JScrollPane metricsScroll = new ThermostatScrollPane(metricsTable);
+         metricsPanel.add(metricsScroll, c);
+         // add a panel to control selection of metrics time interval
+         updateGraphControlPanel(xWeightFullWidth, yWeightRow2);
+@@ -563,7 +628,7 @@
+                 } else if (selectedPanel == graphMainPanel) {
+                     fireTabSelectedEvent(TabbedPaneAction.GRAPH_TAB_SELECTED);
+                 } else {
+-                    throw new AssertionError("Unkown tab in tabbed pane: " + selectedPanel);
++                    throw new AssertionError("Unknown tab in tabbed pane: " + selectedPanel);
+                 }
+             }
+         });
+@@ -597,7 +662,7 @@
+         GridBagConstraints c = new GridBagConstraints();
+         c.fill = GridBagConstraints.BOTH;
+         c.gridx = 0;
+-        c.gridy = 1;
++        c.gridy = 2;
+         c.weighty = weighty;
+         c.weightx = weightx;
+         
+@@ -690,6 +755,7 @@
+         SwingUtilities.invokeLater(new Runnable() {
+             @Override
+             public void run() {
++                bytemanState = state;
+                 final String buttonLabel;
+                 if (!viewControlsEnabled) {
+                     buttonLabel = t.localize(LocaleResources.INJECT_RULE).getContents();
+@@ -710,6 +776,7 @@
+                     injectedRulesText.setText(unloadedRulesText.getText());
+                     injectRuleButton.setEnabled(false);
+                     unloadRuleButton.setEnabled(true);
++                    fireGenerateEvent(GenerateAction.GENERATE_TABLE);
+                 } else if (state == BytemanInjectState.UNLOADING) {
+                     if (EMPTY_STR.equals(unloadedRulesText.getText().trim())) {
+                         unloadedRulesText.setText(injectedRulesText.getText());
+@@ -724,20 +791,39 @@
+     }
+ 
+     @Override
+-    public void setViewControlsEnabled(boolean newState) {
+-        this.viewControlsEnabled = newState;
+-        if (!viewControlsEnabled) {
+-            setInjectState(BytemanInjectState.DISABLED);
++    public BytemanInjectState getInjectState() {
++        try {
++            return new EdtHelper().callAndWait(new Callable<BytemanInjectState>() {
++                @Override
++                public BytemanInjectState call() throws Exception {
++                    return bytemanState;
++                }
++            });
++        } catch (InvocationTargetException | InterruptedException e) {
++            e.printStackTrace();
++            return null;
+         }
+     }
+ 
++    public void setViewControlsEnabled(final boolean newState) {
++        SwingUtilities.invokeLater(new Runnable() {
++            @Override
++            public void run() {
++                viewControlsEnabled = newState;
++                if (!viewControlsEnabled) {
++                    setInjectState(BytemanInjectState.DISABLED);
++                }
++            }
++        });
++    }
++
+     @Override
+     public void contentChanged(ActionEvent<TabbedPaneContentAction> event) {
+         TabbedPaneContentAction action = event.getActionId();
+         switch(action) {
+         case METRICS_CHANGED:
+             @SuppressWarnings("unchecked")
+-            List<BytemanMetric> metrics = (List<BytemanMetric>)event.getPayload();
++            List<BytemanMetric> metrics = (List<BytemanMetric>) event.getPayload();
+             updateViewWithMetrics(metrics);
+             break;
+         case RULES_CHANGED:
+@@ -751,11 +837,12 @@
+             updateMetricsRangeInView();
+             break;
+         default:
+-            throw new AssertionError("Unknown event: " + action);
++                throw new AssertionError("Unknown event: " + action);
+         }
+-        
+     }
+ 
++
++
+     // time range might have changed in graph view. update metrics
+     // accordingly
+     private void updateMetricsRangeInView() {
+@@ -792,25 +879,90 @@
+     // package private for testing
+     static DateFormat metricsDateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.LONG);
+ 
+-    private void updateViewWithMetrics(List<BytemanMetric> metrics) {
+-        final StringBuffer buffer = new StringBuffer();
+-        for (BytemanMetric m: metrics) {
+-            String marker = m.getMarker();
+-            long timestamp = m.getTimeStamp();
+-            String timestring = metricsDateFormat.format(new Date(timestamp));
+-            buffer.append(timestring).append(": ").append(marker).append(" ").append(m.getDataAsJson()).append("\n");
++    private DefaultComboBoxModel setupComboModel() {
++        DefaultComboBoxModel model = new DefaultComboBoxModel();
++        SortedSet<String> sortedMetricNames = new TreeSet<>(metricsNameSet);
++        for (String s : sortedMetricNames) {
++            model.addElement(s);
+         }
+-        if (buffer.length() == 0) {
+-            buffer.append(NO_METRICS_AVAILABLE).append("\n");
++        return model;
++    }
++
++    private void updateComboBox (DefaultComboBoxModel model) {
++        int indexCombo = metricsComboBox.getSelectedIndex();
++
++        if (metricsNameSet.size() == 0) { // initial setup
++            metricsComboBox.setEnabled(false);
++            model.addElement("\t");
++            indexCombo = 0;
++        } else { // when metrics are available for display
++            if (indexCombo == -1) {
++                indexCombo = 0;
++            }
++            metricsComboBox.setEnabled(true);
++            if (metricsNameSet.size() > 1) {
++                comboModel.insertElementAt(t.localize(LocaleResources.COMBO_ALL_METRICS).getContents(), 0);
++            }
+         }
+-        SwingUtilities.invokeLater(new Runnable() {
+-            @Override
+-            public void run() {
+-                metricsText.setText(buffer.toString());
+-            }
+-        });
++        metricsComboBox.setModel(model);
++        metricsComboBox.setSelectedIndex(indexCombo);
+     }
+ 
++    private void updateViewWithMetrics(final List<BytemanMetric> metrics) {
++        try {
++            SwingUtilities.invokeAndWait(new Runnable() {
++                @Override
++                public void run() {
++                    tableModel = new NonEditableTableModel();
++                    if (metrics.size() == 0) {
++                        tableModel.addColumn(EMPTY_STR);
++                        tableModel.addRow(new Object[]{NO_METRICS_AVAILABLE});
++                        metricsTable.setModel(tableModel);
++                        metricsTable.setAutoCreateColumnsFromModel(true);
++                    } else {
++                        Map<String, Object> map = new HashMap<>();
++                        int previousNameSetSize = metricsNameSet.size();
++                        String selectedMetric = metricsComboBox.getSelectedItem().toString();
++                        tableModel.addColumn(t.localize(LocaleResources.HEADER_TIMESTAMP).getContents());
++                        tableModel.addColumn(t.localize(LocaleResources.HEADER_MARKER).getContents());
++                        tableModel.addColumn(t.localize(LocaleResources.HEADER_METRIC_NAME).getContents());
++                        tableModel.addColumn(t.localize(LocaleResources.HEADER_METRIC_VALUE).getContents());
++                        columnModel = metricsTable.getColumnModel();
++                        for (BytemanMetric m : metrics) {
++                            String timestamp = metricsDateFormat.format(m.getTimeStamp());
++                            map = m.getDataAsMap();
++                            for (Entry<String, Object> item : map.entrySet()) {
++                                String metricsName = item.getKey();
++                                Object metricsValue = item.getValue();
++                                metricsNameSet.add(metricsName);
++                                if (selectedMetric.equals(metricsName) || metricsComboBox.getSelectedIndex() == 0) {
++                                    tableModel.addRow(new Object[]{timestamp, m.getMarker(), metricsName, metricsValue});
++                                }
++                            }
++                        }
++                        if (previousNameSetSize != metricsNameSet.size()) {
++                            comboModel = setupComboModel();
++                            updateComboBox(comboModel);
++                        }
++                        metricsTable.setModel(tableModel);
++                        TableRowSorter<NonEditableTableModel> sorter = new TableRowSorter<>(tableModel);
++                        sorter.setComparator(COLUMN_METRIC_VALUE, new MetricFieldValueComparator());
++                        sorter.setSortKeys(sortKey);
++                        metricsTable.setAutoCreateColumnsFromModel(false);
++                        metricsTable.setColumnModel(columnModel);
++                        metricsTable.setRowSorter(sorter);
++                    }
++                }
++            });
++        } catch (InterruptedException e) {
++            e.printStackTrace();
++        } catch (InvocationTargetException e) {
++            e.printStackTrace();
++        }
++    }
++
++    // Methods for testing
++
+     // Package private for testing
+     String getInjectedRuleContent() throws InvocationTargetException, InterruptedException {
+         injectedRuleContent = "";
+diff --git a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationController.java b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationController.java
+--- a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationController.java
++++ b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationController.java
+@@ -40,7 +40,10 @@
+ import java.io.InputStream;
+ import java.net.InetSocketAddress;
+ import java.nio.charset.Charset;
++import java.util.Collections;
+ import java.util.List;
++import java.util.Timer;
++import java.util.TimerTask;
+ import java.util.concurrent.CountDownLatch;
+ import java.util.concurrent.TimeUnit;
+ import java.util.logging.Level;
+@@ -52,6 +55,7 @@
+ import com.redhat.thermostat.client.core.views.UIComponent;
+ import com.redhat.thermostat.common.ActionEvent;
+ import com.redhat.thermostat.common.ActionListener;
++import com.redhat.thermostat.common.ApplicationService;
+ import com.redhat.thermostat.common.command.Request;
+ import com.redhat.thermostat.common.model.Range;
+ import com.redhat.thermostat.common.utils.LoggingUtils;
+@@ -85,6 +89,7 @@
+     private static final Translate<LocaleResources> t = LocaleResources.createLocalizer();
+     private static final Charset UTF_8_CHARSET = Charset.forName("UTF-8");
+     private static final String EMPTY_STR = "";
++    private static final int ONE_SECOND = 1000;
+     static final String NO_RULES_LOADED = t.localize(LocaleResources.NO_RULES_LOADED).getContents();
+     
+     private final VmRef vm;
+@@ -93,7 +98,11 @@
+     private final VmBytemanView view;
+     private final VmBytemanDAO bytemanDao;
+     private final RequestQueue requestQueue;
+-    
++    private Timer timer;
++    private List<BytemanMetric> previousPayload = Collections.EMPTY_LIST;
++    private boolean comboBoxSelected = false;
++    boolean isPolling = false;
++
+     VmBytemanInformationController(final VmBytemanView view, VmRef vm,
+                                    AgentInfoDAO agentInfoDao, VmInfoDAO vmInfoDao,
+                                    VmBytemanDAO bytemanDao, RequestQueue requestQueue) {
+@@ -103,6 +112,7 @@
+         this.vmInfoDao = vmInfoDao;
+         this.bytemanDao = bytemanDao;
+         this.requestQueue = requestQueue;
++
+         view.addActionListener(new ActionListener<Action>() {
+             
+             @Override
+@@ -167,6 +177,10 @@
+                 case GENERATE_TEMPLATE:
+                     generateTemplate();
+                     break;
++                case GENERATE_TABLE:
++                    comboBoxSelected = true;
++                    updateMetrics();
++                    break;
+                 case GENERATE_GRAPH:
+                     updateGraph();
+                     break;
+@@ -250,7 +264,54 @@
+         List<BytemanMetric> metrics = bytemanDao.findBytemanMetrics(timeRange, vmId, agentId);
+         ActionEvent<TabbedPaneContentAction> event = new ActionEvent<>(this, TabbedPaneContentAction.METRICS_CHANGED);
+         event.setPayload(metrics);
+-        view.contentChanged(event);
++        if ((metrics.isEmpty() && view.getInjectState() == BytemanInjectState.UNLOADED) || !isAlive()) {
++            // stop polling if new payload is empty and inject state is not injected, or if VM is dead
++            stopPolling();
++            view.contentChanged(event);
++        } else if (previousPayload.isEmpty() || isNewPayload(metrics, previousPayload)) {
++            // start or continue polling if it's the first or new distinct payload
++            if (!isPolling) {
++                startPolling();
++                isPolling = true;
++            }
++            view.contentChanged(event);
++        } else if (comboBoxSelected) {
++            // selecting a combo box option requires a payload to redraw the table
++            comboBoxSelected = false;
++            view.contentChanged(event);
++        }
++        previousPayload = metrics;
++    }
++
++    private boolean isNewPayload(List<BytemanMetric> newPayload, List<BytemanMetric> prevPayload) {
++        boolean result = false;
++        if (newPayload.size() == 0 && prevPayload.size() == 0) {
++            return false;
++        } else if (newPayload.size() != prevPayload.size()) {
++            return true;
++        } else {
++            for (int i = 0; i < newPayload.size(); i++) {
++                if (!newPayload.get(i).getDataAsJson().equals(prevPayload.get(i).getDataAsJson())) {
++                    result = true;
++                    break;
++                }
++            }
++        }
++        return result;
++    }
++
++    private void startPolling() {
++        timer = new Timer();
++        timer.schedule(new TimerTask() {
++            public void run() {
++                updateMetrics();
++            }
++        }, 0, ONE_SECOND);
++    }
++
++    private void stopPolling() {
++        timer.cancel();
++        isPolling = false;
+     }
+ 
+     void updateGraph() {
+diff --git a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationService.java b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationService.java
+--- a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationService.java
++++ b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationService.java
+@@ -36,6 +36,7 @@
+ 
+ package com.redhat.thermostat.vm.byteman.client.swing.internal;
+ 
++import com.redhat.thermostat.common.ApplicationService;
+ import org.apache.felix.scr.annotations.Component;
+ import org.apache.felix.scr.annotations.Properties;
+ import org.apache.felix.scr.annotations.Property;
+@@ -75,6 +76,9 @@
+     @Reference
+     private RequestQueue requestQueue;
+ 
++    @Reference
++    private ApplicationService appSvc;
++
+     @Override
+     public int getOrderValue() {
+         return Ordered.ORDER_USER_GROUP + 55;
+diff --git a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanView.java b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanView.java
+--- a/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanView.java
++++ b/vm-byteman/client-swing/src/main/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanView.java
+@@ -64,6 +64,7 @@
+     
+     static enum GenerateAction {
+         GENERATE_TEMPLATE,
++        GENERATE_TABLE,
+         GENERATE_GRAPH,
+     }
+     
+@@ -111,9 +112,11 @@
+     public abstract void addGenerateActionListener(ActionListener<GenerateAction> listener);
+ 
+     public abstract void setInjectState(BytemanInjectState state);
++
++    public abstract BytemanInjectState getInjectState();
+     
+     public abstract void setViewControlsEnabled(boolean newState);
+-    
++
+     public abstract void contentChanged(ActionEvent<TabbedPaneContentAction> event);
+     
+     public abstract String getRuleContent();
+diff --git a/vm-byteman/client-swing/src/main/resources/com/redhat/thermostat/vm/byteman/client/swing/internal/strings.properties b/vm-byteman/client-swing/src/main/resources/com/redhat/thermostat/vm/byteman/client/swing/internal/strings.properties
+--- a/vm-byteman/client-swing/src/main/resources/com/redhat/thermostat/vm/byteman/client/swing/internal/strings.properties
++++ b/vm-byteman/client-swing/src/main/resources/com/redhat/thermostat/vm/byteman/client/swing/internal/strings.properties
+@@ -9,10 +9,16 @@
+ GENERATE_GRAPH = Generate Graph
+ RULE_EMPTY = Rule to inject is empty.
+ NO_RULES_LOADED = <no-rules-loaded>
+-NO_METRICS_AVAILABLE = <no-metrics-available>
+ LABEL_LOCAL_RULE = Local Rule
+ LABEL_INJECTED_RULE = Injected Rule
+ IMPORT_RULE = Import Rule from File
++NO_METRICS_AVAILABLE = <no-metrics-available>
++COMBO_ALL_METRICS = All Available Metrics
++LABEL_SELECT_METRICS = Select a metric:
++HEADER_TIMESTAMP = Time Stamp
++HEADER_MARKER = Marker
++HEADER_METRIC_NAME = Name
++HEADER_METRIC_VALUE = Value
+ FILTER = Filter:
+ FILTER_VALUE_LABEL = ==
+ NO_FILTER_NAME = <No Filter>
+diff --git a/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/MetricFieldValueComparatorTest.java b/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/MetricFieldValueComparatorTest.java
+new file mode 100644
+--- /dev/null
++++ b/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/MetricFieldValueComparatorTest.java
+@@ -0,0 +1,84 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.vm.byteman.client.swing.internal;
++
++import org.junit.Test;
++
++import java.util.ArrayList;
++import java.util.Arrays;
++import java.util.Collections;
++import java.util.List;
++
++import static org.junit.Assert.assertEquals;
++
++public class MetricFieldValueComparatorTest {
++
++    @Test
++    public void testWithBoolean() {
++        Object[] values = {true, "not boolean", false, false, true};
++        List<Object> sorted = new ArrayList<>(Arrays.asList(values));
++        Collections.sort(sorted, new MetricFieldValueComparator());
++        assertEquals(values[2], sorted.get(0));
++        assertEquals(values[3], sorted.get(1));
++        assertEquals(values[1], sorted.get(2));
++        assertEquals(values[0], sorted.get(3));
++        assertEquals(values[4], sorted.get(4));
++    }
++
++    @Test(expected=NullPointerException.class)
++    public void testWithNull() {
++        Object[] values = {"foo", null, "bar", "1", "3", "2"};
++        List<Object> sorted = new ArrayList<>(Arrays.asList(values));
++        Collections.sort(sorted, new MetricFieldValueComparator());
++    }
++
++    @Test
++    public void testWithValidValues() {
++        String[] values = {"foo", "1", "2.5", "4", "3", "baz", "bar"};
++
++        List<String> sorted = new ArrayList<String>(Arrays.asList(values));
++        Collections.sort(sorted, new MetricFieldValueComparator());
++
++        assertEquals(values[1], sorted.get(0));
++        assertEquals(values[2], sorted.get(1));
++        assertEquals(values[4], sorted.get(2));
++        assertEquals(values[3], sorted.get(3));
++        assertEquals(values[6], sorted.get(4));
++        assertEquals(values[5], sorted.get(5));
++        assertEquals(values[0], sorted.get(6));
++    }
++}
+\ No newline at end of file
+diff --git a/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/SwingVmBytemanViewTest.java b/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/SwingVmBytemanViewTest.java
+--- a/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/SwingVmBytemanViewTest.java
++++ b/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/SwingVmBytemanViewTest.java
+@@ -44,13 +44,14 @@
+ import java.awt.Container;
+ import java.awt.Dimension;
+ import java.lang.reflect.InvocationTargetException;
+-import java.text.DateFormat;
+-import java.util.Arrays;
++import java.util.ArrayList;
+ import java.util.Collections;
+-import java.util.Date;
++import java.util.List;
+ import java.util.concurrent.CountDownLatch;
+ 
++import javax.swing.JComboBox;
+ import javax.swing.JFrame;
++import javax.swing.JTable;
+ import javax.swing.JTextArea;
+ import javax.swing.SwingUtilities;
+ import javax.swing.text.JTextComponent;
+@@ -62,6 +63,8 @@
+ import org.fest.swing.edt.GuiTask;
+ import org.fest.swing.fixture.Containers;
+ import org.fest.swing.fixture.FrameFixture;
++import org.fest.swing.fixture.JComboBoxFixture;
++import org.fest.swing.fixture.JTableFixture;
+ import org.fest.swing.fixture.JTextComponentFixture;
+ import org.fest.swing.fixture.JToggleButtonFixture;
+ import org.junit.After;
+@@ -181,7 +184,6 @@
+         assertEquals(template, view.getUnloadedRuleContent());
+     }
+ 
+-
+     @GUITest
+     @Test
+     public void testInjectButton() throws InvocationTargetException, InterruptedException {
+@@ -253,29 +255,100 @@
+         assertEquals(ruleContent, actual);
+     }
+ 
+-    @GUITest
+-    @Test
+-    public void testContentChangedMetrics() {
+-        String content = "{ \"foo\": \"bar\" }";
+-        String marker = "marker";
+-        long timestamp = 1_440_000_000_000L;
+-        DateFormat metricsDateFormat = SwingVmBytemanView.metricsDateFormat;
+-        String timestring = metricsDateFormat.format(new Date(timestamp));
++    private BytemanMetric createMetric(String content, String marker, long timestamp) {
+         BytemanMetric m = new BytemanMetric();
+         m.setData(content);
+         m.setMarker(marker);
+         m.setTimeStamp(timestamp);
++        return m;
++    }
++
++    private void runActionEventMetricsChanged(List<BytemanMetric> metrics) {
++        ActionEvent<VmBytemanView.TabbedPaneContentAction> event = new ActionEvent<>(this, VmBytemanView.TabbedPaneContentAction.METRICS_CHANGED);
++        event.setPayload(metrics);
++        view.contentChanged(event);
++    }
++
++    @GUITest
++    @Test
++    public void testMetricsTableWithNoMetrics() throws InvocationTargetException, InterruptedException {
++        frame.show();
+ 
+         ActionEvent<VmBytemanView.TabbedPaneContentAction> event = new ActionEvent<>(this, VmBytemanView.TabbedPaneContentAction.METRICS_CHANGED);
+-        event.setPayload(Arrays.asList(m));
+-        view.contentChanged(event);
+-        verifyMetricsTextEquals(timestring + ": " + marker + " " + content + "\n");
+-
+-        // Do the same with an empty metrics list
+-        event = new ActionEvent<>(this, VmBytemanView.TabbedPaneContentAction.METRICS_CHANGED);
+         event.setPayload(Collections.emptyList());
+         view.contentChanged(event);
+-        verifyMetricsTextEquals(SwingVmBytemanView.NO_METRICS_AVAILABLE + "\n");
++        JTable table = getMetricsTable();
++        verifyTableValueAt(table, SwingVmBytemanView.NO_METRICS_AVAILABLE, 0, 0);
++    }
++
++    @GUITest
++    @Test
++    public void testMetricsTableWithMetrics() throws InvocationTargetException, InterruptedException {
++        frame.show();
++        JComboBox comboBox = getMetricsComboBox();
++        JTable table = getMetricsTable();
++
++        List<BytemanMetric> metrics = new ArrayList<>();
++        String content = "{ \"foo\": \"value1\" }";
++        String marker = "marker";
++        long timestamp = 1_234_567_890_111L;
++        metrics.add(createMetric(content, marker, timestamp));
++
++        runActionEventMetricsChanged(metrics);
++        verifyComboItemAt(comboBox, "foo", 0);
++        verifyTableValueAt(table, "foo", 0, 2);
++        verifyTableValueAt(table, "value1", 0, 3);
++
++        content = "{ \"bar\": \"value2\" , \"baz\": \"value3\" }";
++        timestamp = 1_234_567_890_333L;
++        metrics.add(0, createMetric(content, marker, timestamp));
++
++        runActionEventMetricsChanged(metrics);
++        comboBox = getMetricsComboBox();
++        table = getMetricsTable();
++        verifyComboItemAt(comboBox, t.localize(LocaleResources.COMBO_ALL_METRICS).getContents(), 0);
++        verifyTableValueAt(table, "bar", 0, 2);
++        verifyTableValueAt(table, "value2", 0, 3);
++        verifyTableValueAt(table, "baz", 1, 2);
++        verifyTableValueAt(table, "value3", 1, 3);
++        verifyTableValueAt(table, "foo", 2, 2);
++        verifyTableValueAt(table, "value1", 2, 3);
++    }
++
++    @GUITest
++    @Test
++    public void testMetricsComboBox() throws InvocationTargetException, InterruptedException {
++        frame.show();
++        JComboBox comboBox = getMetricsComboBox();
++
++        // after initial setup, should have only tab in ComboBox
++        verifyComboItemCount(comboBox, 1);
++        verifyComboItemAt(comboBox, "\t", 0);
++
++        List<BytemanMetric> metrics = new ArrayList<>();
++
++        String content = "{ \"foo\": \"foo\" }";
++        String marker = "marker";
++        long timestamp = 1_234_567_890_111L;
++        metrics.add(createMetric(content, marker, timestamp));
++
++        // after 1 metric, should only have one ComboBox option
++        runActionEventMetricsChanged(metrics);
++        comboBox = getMetricsComboBox();
++        verifyComboItemCount(comboBox, 1);
++        verifyComboItemAt(comboBox, "foo", 0);
++
++        content = "{ \"bar\": \"foo\" , \"baz\": \"foo\" }";
++        timestamp = 1_234_567_890_333L;
++        metrics.add(0, createMetric(content, marker, timestamp));
++
++        runActionEventMetricsChanged(metrics);
++        comboBox = getMetricsComboBox();
++        verifyComboItemCount(comboBox, 4);
++        verifyComboItemAt(comboBox, t.localize(LocaleResources.COMBO_ALL_METRICS).getContents(), 0);
++        verifyComboItemAt(comboBox, "bar", 1);
++        verifyComboItemAt(comboBox, "baz", 2);
++        verifyComboItemAt(comboBox, "foo", 3);
+     }
+ 
+     @GUITest
+@@ -338,6 +411,45 @@
+         return (JTextComponent) textFixture.component();
+     }
+ 
++    private JComboBox getMetricsComboBox() {
++        NameMatcher comboMatcher = new NameMatcher(SwingVmBytemanView.METRICS_COMBO_BOX_NAME, JComboBox.class);
++        JComboBoxFixture comboFixture = new JComboBoxFixture(frame.robot, (JComboBox)frame.robot.finder().find(frame.component(), comboMatcher));
++        return (JComboBox)comboFixture.component();
++    }
++
++    private void verifyComboItemAt(final JComboBox comboBox, final String expected, final int index) {
++        GuiActionRunner.execute(new GuiTask() {
++            @Override
++            protected void executeInEDT() throws Throwable {
++                assertEquals(expected, comboBox.getItemAt(index));
++            }
++        });
++    }
++
++    private void verifyComboItemCount(final JComboBox comboBox, final int expected) {
++        GuiActionRunner.execute(new GuiTask() {
++            @Override
++            protected void executeInEDT() throws Throwable {
++                assertEquals(expected, comboBox.getItemCount());
++            }
++        });
++    }
++
++    private JTable getMetricsTable() {
++        NameMatcher tableMatcher = new NameMatcher(SwingVmBytemanView.METRICS_TABLE_NAME, JTable.class);
++        JTableFixture tableFixture = new JTableFixture(frame.robot, (JTable) frame.robot.finder().find(frame.component(), tableMatcher));
++        return (JTable) tableFixture.component();
++    }
++
++    private void verifyTableValueAt(final JTable table, final Object expected, final int row, final int column) {
++        GuiActionRunner.execute(new GuiTask() {
++            @Override
++            protected void executeInEDT() throws Throwable {
++                assertEquals(expected, table.getValueAt(row, column));
++            }
++        });
++    }
++
+     private void checkButtonState(final BytemanInjectState state, final ActionToggleButton toggleButton)
+             throws InterruptedException, InvocationTargetException {
+         SwingUtilities.invokeAndWait(new Runnable() {
+diff --git a/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationControllerTest.java b/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationControllerTest.java
+--- a/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationControllerTest.java
++++ b/vm-byteman/client-swing/src/test/java/com/redhat/thermostat/vm/byteman/client/swing/internal/VmBytemanInformationControllerTest.java
+@@ -37,16 +37,22 @@
+ package com.redhat.thermostat.vm.byteman.client.swing.internal;
+ 
+ import static org.junit.Assert.assertEquals;
++import static org.junit.Assert.assertFalse;
++import static org.junit.Assert.assertTrue;
+ import static org.mockito.Matchers.any;
+ import static org.mockito.Matchers.eq;
+ import static org.mockito.Mockito.mock;
+ import static org.mockito.Mockito.verify;
+ import static org.mockito.Mockito.when;
+ 
++import java.util.ArrayList;
+ import java.util.Arrays;
++import java.util.Collections;
+ import java.util.List;
+ import java.util.concurrent.CountDownLatch;
+ 
++import com.redhat.thermostat.common.ActionEvent;
++import com.redhat.thermostat.common.ActionListener;
+ import org.junit.After;
+ import org.junit.Test;
+ import org.mockito.ArgumentCaptor;
+@@ -54,8 +60,6 @@
+ import org.mockito.Mockito;
+ 
+ import com.redhat.thermostat.client.command.RequestQueue;
+-import com.redhat.thermostat.common.ActionEvent;
+-import com.redhat.thermostat.common.ActionListener;
+ import com.redhat.thermostat.common.command.Request;
+ import com.redhat.thermostat.common.model.Range;
+ import com.redhat.thermostat.shared.locale.LocalizedString;
+@@ -292,6 +296,52 @@
+         BytemanMetric m = metrics.get(0);
+         assertEquals(VM_ID, m.getVmId());
+     }
++
++    @Test
++    public void testPollingState() {
++        VmBytemanInformationController controller = createController();
++        VmBytemanView view = (VmBytemanView)controller.getView();
++        BytemanMetric metric = new BytemanMetric();
++        List<BytemanMetric> metricsList = new ArrayList<>();
++        String content = "{ \"foo\": \"bar\" }";
++        String marker = "marker";
++        long timestamp = System.currentTimeMillis();
++        metricsList.add(createMetric(content, marker, timestamp));
++        when(vmBytemanDao.findBytemanMetrics(any(Range.class), any(VmId.class), any(AgentId.class))).thenReturn(metricsList);
++
++        // after successful passing of metrics, should be polling
++        when(view.getInjectState()).thenReturn(BytemanInjectState.INJECTED);
++        controller.updateMetrics();
++        assertTrue(controller.isPolling);
++
++        // if no new metrics, and the byteman state is unloaded, stop polling
++        metricsList = new ArrayList<>(Collections.EMPTY_LIST);
++        when(vmBytemanDao.findBytemanMetrics(any(Range.class), any(VmId.class), any(AgentId.class))).thenReturn(metricsList);
++        when(view.getInjectState()).thenReturn(BytemanInjectState.UNLOADED);
++        controller.updateMetrics();
++        assertFalse(controller.isPolling);
++
++        // new metrics resumes polling
++        metricsList = new ArrayList<>(metricsList);
++        when(vmBytemanDao.findBytemanMetrics(any(Range.class), any(VmId.class), any(AgentId.class))).thenReturn(metricsList);
++        when(view.getInjectState()).thenReturn(BytemanInjectState.INJECTED);
++        controller.updateMetrics();
++        assertTrue(controller.isPolling);
++    }
++
++    private BytemanMetric createMetric(String content, String marker, long timestamp) {
++        BytemanMetric m = new BytemanMetric();
++        m.setData(content);
++        m.setMarker(marker);
++        m.setTimeStamp(timestamp);
++        return m;
++    }
++
++    private void runActionEventMetricsChanged(List<BytemanMetric> metrics, SwingVmBytemanView view) {
++        ActionEvent<VmBytemanView.TabbedPaneContentAction> event = new ActionEvent<>(this, VmBytemanView.TabbedPaneContentAction.METRICS_CHANGED);
++        event.setPayload(metrics);
++        view.contentChanged(event);
++    }
+     
+     private VmBytemanInformationController createController() {
+         VmBytemanView view = mock(VmBytemanView.class);
+diff --git a/vm-byteman/distribution/thermostat-plugin.xml b/vm-byteman/distribution/thermostat-plugin.xml
+--- a/vm-byteman/distribution/thermostat-plugin.xml
++++ b/vm-byteman/distribution/thermostat-plugin.xml
+@@ -79,6 +79,13 @@
+                 <required>true</required>
+                 <description>the ID of the VM to instrument</description>
+               </option>
++              <option>
++                <long>show</long>
++                <short>s</short>
++                <argument>name</argument>
++                <required>false</required>
++                <description>the name of a metric to show retrieved data for</description>
++              </option>
+             </options>
+             <environments>
+                 <environment>cli</environment>
