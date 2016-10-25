@@ -1,8 +1,0 @@
-RULE example rule
-CLASS HelloWorld
-METHOD main
-AT ENTRY
-IF TRUE
-DO traceln(“All your base are belong to us!”);
-  $args[0] = “there”;
-ENDRULE

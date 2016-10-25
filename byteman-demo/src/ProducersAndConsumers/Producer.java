@@ -1,5 +1,6 @@
 package ProducersAndConsumers;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -17,24 +18,30 @@ class Producer implements Runnable {
     @Override
     public void run() {
         while (true) {
-            synchronized (queue) {
+            //synchronized (queue) {
                 while (queue.size() == MAX) {
+                    /*
                     try {
                         queue.wait();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                    */
+                    System.out.println("a");
+
                 }
                 addItem();
+                sleep();
+                System.out.println("b");
+                System.out.println(queue.size());
             }
-            sleep();
-        }
+        //}
     }
 
     private synchronized void addItem() {
         int i = ThreadLocalRandom.current().nextInt(0, 3 + 1);
         queue.add(i);
-        queue.notifyAll();
+        //queue.notifyAll();
     }
 
     private void sleep() {

@@ -53,7 +53,7 @@ public class DemoGUI extends JFrame {
                     @Override
                     public Object doInBackground() {
                         setStartTime(System.nanoTime());
-                        pnc = new ProducerAndConsumer(500, 5);
+                        pnc = new ProducerAndConsumer(500, 150);
                         return null;
                     }
 
