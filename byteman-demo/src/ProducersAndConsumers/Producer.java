@@ -27,13 +27,9 @@ class Producer implements Runnable {
                         e.printStackTrace();
                     }
                     */
-                    System.out.println("a");
-
                 }
                 addItem();
                 sleep();
-                System.out.println("b");
-                System.out.println(queue.size());
             }
         //}
     }
