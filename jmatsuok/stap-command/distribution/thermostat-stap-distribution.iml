@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_5" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/target/classes" />
+    <output-test url="file://$MODULE_DIR$/target/test-classes" />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="thermostat-stap-command" />
+    <orderEntry type="module" module-name="thermostat-common-core" />
+    <orderEntry type="library" name="Maven: org.apache.felix:org.apache.felix.framework:4.2.0" level="project" />
+    <orderEntry type="library" name="Maven: jline:jline:2.13" level="project" />
+    <orderEntry type="library" name="Maven: org.fusesource.jansi:jansi:1.11" level="project" />
+    <orderEntry type="library" name="Maven: commons-cli:commons-cli:1.2" level="project" />
+    <orderEntry type="module" module-name="thermostat-annotations" />
+    <orderEntry type="module" module-name="thermostat-keyring" />
+    <orderEntry type="module" module-name="thermostat-client-cli" />
+    <orderEntry type="module" module-name="thermostat-launcher" />
+    <orderEntry type="module" module-name="thermostat-plugin-validator" />
+    <orderEntry type="module" module-name="thermostat-process-handler" />
+    <orderEntry type="module" module-name="thermostat-shared-config" />
+    <orderEntry type="library" name="Maven: org.apache.felix:org.apache.felix.scr.annotations:1.9.12" level="project" />
+    <orderEntry type="module" module-name="thermostat-stap-agent" />
+    <orderEntry type="module" module-name="thermostat-stap-common" />
+    <orderEntry type="module" module-name="thermostat-storage-core" />
+    <orderEntry type="module" module-name="thermostat-agent-core" />
+    <orderEntry type="module" module-name="thermostat-agent-ipc-server" />
+    <orderEntry type="module" module-name="thermostat-agent-ipc-common" />
+    <orderEntry type="library" name="Maven: org.osgi:org.osgi.core:4.3.1" level="project" />
+    <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.2.2" level="project" />
+    <orderEntry type="module" module-name="thermostat-client-command" />
+    <orderEntry type="library" name="Maven: io.netty:netty-handler:4.0.28.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-buffer:4.0.28.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-common:4.0.28.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-transport:4.0.28.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-codec:4.0.28.Final" level="project" />
+    <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.7" level="project" />
+    <orderEntry type="module" module-name="thermostat-common-command" />
+    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient-osgi:4.3.4" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.3.4" level="project" />
+    <orderEntry type="library" name="Maven: commons-logging:commons-logging:1.1.3" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore:4.3.2" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpmime:4.3.4" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient-cache:4.3.4" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.httpcomponents:fluent-hc:4.3.4" level="project" />
+    <orderEntry type="module" module-name="thermostat-stap-gui" />
+    <orderEntry type="module" module-name="thermostat-client-core" />
+    <orderEntry type="library" name="Maven: org.jfree:jfreechart:1.0.14" level="project" />
+    <orderEntry type="library" name="Maven: org.jfree:jcommon:1.0.17" level="project" />
+    <orderEntry type="library" name="Maven: xml-apis:xml-apis:1.3.04" level="project" />
+    <orderEntry type="library" name="Maven: com.lowagie:itext:2.1.5" level="project" />
+    <orderEntry type="library" name="Maven: bouncycastle:bcmail-jdk14:138" level="project" />
+    <orderEntry type="library" name="Maven: bouncycastle:bcprov-jdk14:138" level="project" />
+    <orderEntry type="module" module-name="thermostat-swing-components" />
+    <orderEntry type="module" module-name="thermostat-client-swing" />
+    <orderEntry type="module" module-name="thermostat-laf-utils" />
+    <orderEntry type="module-library">
+      <library name="Maven: com.sun:tools:1.7.0">
+        <CLASSES>
+          <root url="jar:///usr/lib/jvm/java/jre/../lib/tools.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+  </component>
+</module>

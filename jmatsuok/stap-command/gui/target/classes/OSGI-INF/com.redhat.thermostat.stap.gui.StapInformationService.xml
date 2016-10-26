@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.0.0" name="com.redhat.thermostat.stap.gui.StapInformationService">
+    <implementation class="com.redhat.thermostat.stap.gui.StapInformationService"/>
+    <service servicefactory="false">
+        <provide interface="com.redhat.thermostat.client.core.InformationService"/>
+    </service>
+    <property name="com.redhat.thermostat.client.core.InformationService.serviceID" value="com.redhat.thermostat.stap.gui.StapInformationService"/>
+    <property name="GenericClassName" value="com.redhat.thermostat.storage.core.VmRef"/>
+    <property name="service.pid" value="com.redhat.thermostat.stap.gui.StapInformationService"/>
+</scr:component>

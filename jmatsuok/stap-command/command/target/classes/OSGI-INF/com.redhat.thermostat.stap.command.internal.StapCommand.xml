@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="com.redhat.thermostat.stap.command.internal.StapCommand">
+    <implementation class="com.redhat.thermostat.stap.command.internal.StapCommand"/>
+    <service servicefactory="false">
+        <provide interface="com.redhat.thermostat.common.cli.Command"/>
+    </service>
+    <property name="COMMAND_NAME" value="stap"/>
+    <property name="service.pid" value="com.redhat.thermostat.stap.command.internal.StapCommand"/>
+    <reference name="stapDao" interface="com.redhat.thermostat.stap.common.StapDAO" cardinality="0..1" policy="dynamic" bind="bindStapDao" unbind="unbindStapDao"/>
+</scr:component>
