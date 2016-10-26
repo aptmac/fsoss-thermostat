@@ -185,7 +185,7 @@ diff --git a/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/S
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/StapBackend.java
-@@ -0,0 +1,193 @@
+@@ -0,0 +1,194 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -308,6 +308,7 @@ new file mode 100644
 +            st.setAgentId(raw[0]+":"+raw[2]);
 +            st.setVmId(raw[1]+":"+raw[3]);
 +            st.setStapMetric(raw[4]+raw[5]+raw[6]+raw[7]+raw[8]);
++            st.setId("1");
 +            parsedOutput.add(st);
 +        }
 +        return parsedOutput;
@@ -594,7 +595,7 @@ diff --git a/stap-command/command/src/main/java/com/redhat/thermostat/stap/comma
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/command/src/main/java/com/redhat/thermostat/stap/command/internal/StapCommand.java
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,105 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -681,7 +682,8 @@ new file mode 100644
 +        long count = stapDao.getCount(ctx.getArguments().getNonOptionArguments().get(0));
 +        System.out.println(ctx.getArguments().getNonOptionArguments().get(0) +
 +                " Received " + count + " Packets");
-+        System.out.println(stapDao.getDistinctIPs().toString());
++
++        //System.out.println(stapDao.getDistinctIPs("1").toString());
 +
 +    }
 +
@@ -959,14 +961,14 @@ new file mode 100644
 +
 +    List<StapData> getAll();
 +
-+    Set<String> getDistinctIPs();
++    Set<String> getDistinctIPs(final String id);
 +
 +}
 diff --git a/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapData.java b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapData.java
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapData.java
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,104 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -1018,6 +1020,7 @@ new file mode 100644
 +    private String VmId;
 +    private long timeStamp;
 +    private String stapMetric;
++    private String id;
 +
 +    public StapData() {
 +        super(null);
@@ -1057,6 +1060,16 @@ new file mode 100644
 +    @Persist
 +    public void setStapMetric(String packet) {
 +        this.stapMetric = packet;
++    }
++
++    @Persist
++    public void setId(String id) {
++        this.id = id;
++    }
++
++    @Persist
++    public String getId() {
++        return id;
 +    }
 +
 +}
@@ -1124,7 +1137,7 @@ diff --git a/stap-command/common/src/main/java/com/redhat/thermostat/stap/common
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImpl.java
-@@ -0,0 +1,169 @@
+@@ -0,0 +1,170 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -1276,10 +1289,11 @@ new file mode 100644
 +    }
 +
 +    @Override
-+    public Set<String> getDistinctIPs() {
++    public Set<String> getDistinctIPs(final String id) {
 +        DistinctResult dr = executeQuery(new AbstractDaoQuery<DistinctResult>(storage, aggregateCategory, QUERY_ALL) {
 +            @Override
 +            public PreparedStatement<DistinctResult> customize(PreparedStatement<DistinctResult> preparedStatement) {
++                preparedStatement.setString(0, id);
 +                return preparedStatement;
 +            }
 +        }).head();
@@ -1590,7 +1604,7 @@ diff --git a/stap-command/gui/pom.xml b/stap-command/gui/pom.xml
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/gui/pom.xml
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,118 @@
 +<?xml version="1.0" encoding="UTF-8"?>
 +<!--
 +
@@ -1699,6 +1713,14 @@ new file mode 100644
 +            <artifactId>thermostat-stap-common</artifactId>
 +            <version>${project.version}</version>
 +        </dependency>
++        <dependency>
++            <groupId>org.apache.felix</groupId>
++            <artifactId>org.apache.felix.scr.annotations</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>org.jfree</groupId>
++            <artifactId>jfreechart</artifactId>
++        </dependency>
 +    </dependencies>
 +</project>
 \ No newline at end of file
@@ -1734,7 +1756,7 @@ diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapI
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationController.java
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,110 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -1775,8 +1797,11 @@ new file mode 100644
 +
 +import com.redhat.thermostat.client.core.controllers.InformationServiceController;
 +import com.redhat.thermostat.client.core.views.UIComponent;
++import com.redhat.thermostat.common.ApplicationService;
++import com.redhat.thermostat.common.Timer;
 +import com.redhat.thermostat.shared.locale.LocalizedString;
 +import com.redhat.thermostat.shared.locale.Translate;
++import com.redhat.thermostat.stap.common.StapDAO;
 +import com.redhat.thermostat.storage.core.VmRef;
 +import com.redhat.thermostat.storage.model.DiscreteTimeData;
 +import com.redhat.thermostat.stap.common.StapData;
@@ -1785,6 +1810,7 @@ new file mode 100644
 +import java.util.List;
 +import java.util.ArrayList;
 +import java.util.Map;
++import java.util.concurrent.TimeUnit;
 +
 +/**
 + * Created by jmatsuok on 24/10/16.
@@ -1793,14 +1819,36 @@ new file mode 100644
 +
 +    private Translate<LocaleResources> t = LocaleResources.createLocalizer();
 +    private StapView view;
++    private StapDAO dao;
++    private ApplicationService appservice;
 +
 +    public StapInformationController(final StapView view) {
 +        this.view = view;
 +    }
 +
-+    public StapInformationController() {
++    public StapInformationController(ApplicationService applicationService, StapDAO stapdao) {
 +        this.view = new StapPanel();
-+        view.addChart("Hello");
++        this.appservice = applicationService;
++        view.addChart("127.0.0.1:53078");
++        this.dao = stapdao;
++        if(applicationService == null || stapdao == null) {
++            System.out.println("Harambe");
++            return;
++        }
++
++        Timer t = appservice.getTimerFactory().createTimer();
++        t.setInitialDelay(0);
++        t.setDelay(5);
++        t.setSchedulingType(Timer.SchedulingType.FIXED_DELAY);
++        t.setTimeUnit(TimeUnit.SECONDS);
++        t.setAction(new Runnable() {
++            @Override
++            public void run() {
++                view.updateData(dao.getCount("127.0.0.1:27518"), "127.0.0.1:27518");
++            }
++        });
++        long data = dao.getCount("127.0.0.1:27518");
++        System.out.println(data);
 +    }
 +
 +    @Override
@@ -1823,7 +1871,7 @@ diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapI
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationService.java
-@@ -0,0 +1,78 @@
+@@ -0,0 +1,85 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -1865,8 +1913,10 @@ new file mode 100644
 +import com.redhat.thermostat.client.core.InformationService;
 +import com.redhat.thermostat.client.core.controllers.InformationServiceController;
 +import com.redhat.thermostat.common.AllPassFilter;
++import com.redhat.thermostat.common.ApplicationService;
 +import com.redhat.thermostat.common.Filter;
 +import com.redhat.thermostat.common.Ordered;
++import com.redhat.thermostat.stap.common.StapDAO;
 +import com.redhat.thermostat.storage.core.VmRef;
 +import org.apache.felix.scr.annotations.*;
 +
@@ -1883,10 +1933,15 @@ new file mode 100644
 +        })
 +public class StapInformationService implements InformationService<VmRef> {
 +
-+    /*@Activate
-+    public void activate(final BundleContext ctx) {
-+        StapViewProvider p = new SwingStapViewProvider();
-+        ctx.registerService(StapViewProvider.class.getName(), p, null);
++    @Reference
++    private ApplicationService appservice;
++
++    @Reference
++    private StapDAO stapDao;
++
++    /*Activate
++    public void activate() {
++        sc = new StapInformationController(appservice, stapDao);
 +    }*/
 +
 +    @Override
@@ -1899,14 +1954,14 @@ new file mode 100644
 +
 +    @Override
 +    public InformationServiceController<VmRef> getInformationServiceController(VmRef ref) {
-+        return new StapInformationController();
++        return new StapInformationController(appservice, stapDao);
 +    }
 +}
 diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapPanel.java b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapPanel.java
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapPanel.java
-@@ -0,0 +1,174 @@
+@@ -0,0 +1,191 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -2001,8 +2056,6 @@ new file mode 100644
 +    }
 +
 +    private JPanel initializeChartsPanel() {
-+        JPanel p = new JPanel();
-+        //JLabel h = new JLabel("Harambe");
 +        JPanel detailsPanel = new JPanel();
 +        duration = ThermostatChartPanel.DEFAULT_DATA_DISPLAY;
 +        chartPanel = new ThermostatChartPanel(duration);
@@ -2055,7 +2108,26 @@ new file mode 100644
 +        chartPanel.repaint();
 +    }
 +
-+    public void addData(final String tag, final java.util.List<DiscreteTimeData<Double>[]> data) {
++    @Override
++    public void updateData(long l, String tag) {
++        System.out.println("Received Data: "+l);
++        final DiscreteTimeData<Long> dtd = new DiscreteTimeData<>(System.currentTimeMillis(), l);
++        final TimeSeriesCollection c = collections.get(tag);
++        SwingUtilities.invokeLater(new Runnable() {
++            @Override
++            public void run() {
++                for (int j = 0; j < 3; j++) {
++                    if (null == c.getSeries(j).getDataItem(new Millisecond(new Date(dtd.getTimeInMillis())))) {
++                        c.getSeries(j).add(new Millisecond(new Date(dtd.getTimeInMillis())), dtd.getData());
++                    }
++                }
++            }
++        });
++        chartPanel.revalidate();
++        chartPanel.repaint();
++    }
++
++    public void addData(String tag, final java.util.List<DiscreteTimeData<Double>[]> data) {
 +        final java.util.List<DiscreteTimeData<Double>[]> copy = new ArrayList<>(data);
 +        final TimeSeriesCollection collection = collections.get(tag);
 +        SwingUtilities.invokeLater(new Runnable() {
@@ -2085,7 +2157,7 @@ diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapV
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapView.java
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,50 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -2133,6 +2205,8 @@ new file mode 100644
 +public abstract class StapView extends BasicView implements UIComponent {
 +
 +    public abstract void addChart(String tag);
++
++    public abstract void updateData(long l, String tag);
 +}
 diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapViewProvider.java b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapViewProvider.java
 new file mode 100644
