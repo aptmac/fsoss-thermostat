@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="byteman-dtest">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/byteman/contrib/dtest/byteman-dtest.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

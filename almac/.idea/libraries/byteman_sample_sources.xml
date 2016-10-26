@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="byteman-sample-sources">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/byteman/sources/byteman-sample/byteman-sample-sources.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="byteman-jboss-modules-plugin-javadoc">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/byteman/javadoc/byteman-jboss-modules-plugin/byteman-jboss-modules-plugin-javadoc.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

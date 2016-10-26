@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="byteman-bmunit-javadoc">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/byteman/javadoc/byteman-bmunit/byteman-bmunit-javadoc.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

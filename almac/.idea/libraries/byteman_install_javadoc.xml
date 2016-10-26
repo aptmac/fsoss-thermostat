@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="byteman-install-javadoc">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/byteman/javadoc/byteman-install/byteman-install-javadoc.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
