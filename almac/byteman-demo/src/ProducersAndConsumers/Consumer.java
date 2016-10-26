@@ -17,31 +17,20 @@ class Consumer implements Runnable {
     @Override
     public void run() {
         while (true) {
-            //synchronized (queue) {
-                while (queue.isEmpty()) {
-                    /*
-                    try {
-                        queue.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    */
-                    System.out.println("empty");
-                    sleep();
-                }
-                removeItem();
+            while (queue.isEmpty()) {
+                sleep();
+            }
+            removeItem();
+            sleep();
             if (numConsumed == 15) {
                 Thread.currentThread().interrupt();
-                //break;
             }
         }
-        //}
     }
 
     private synchronized void removeItem() {
         numConsumed++;
         queue.remove(0);
-        //queue.notifyAll();
         DemoGUI.getInstance().appendText("CONSUMER has consumed item #" + numConsumed + " \n");
     }
 

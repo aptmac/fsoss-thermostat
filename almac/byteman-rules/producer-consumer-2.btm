@@ -7,7 +7,7 @@ METHOD sleep
 AT ENTRY
 IF true
 DO
-incrementCounter("producer-sleep-counter")
+incrementCounter("producer-sleep-counter-2")
 ENDRULE
 
 RULE count producer addItem method invocations
@@ -16,7 +16,7 @@ METHOD addItem
 AT ENTRY
 IF true
 DO
-incrementCounter("producer-add-counter")
+incrementCounter("producer-add-counter-2")
 ENDRULE
 
 RULE count consumer sleep method invocations
@@ -25,7 +25,7 @@ METHOD sleep
 AT ENTRY
 IF true
 DO
-incrementCounter("consumer-sleep-counter")
+incrementCounter("consumer-sleep-counter-2")
 ENDRULE
 
 RULE count consumer removeItem method invocations
@@ -34,7 +34,7 @@ METHOD removeItem
 AT ENTRY
 IF true
 DO
-incrementCounter("consumer-remove-counter")
+incrementCounter("consumer-remove-counter-2")
 ENDRULE
 
 ####################################
@@ -44,7 +44,7 @@ RULE send producer sleep method invocations to thermostat
 CLASS Producer
 METHOD sleep
 AT ENTRY
-BIND counterValue: int = readCounter("producer-sleep-counter")
+BIND counterValue: int = readCounter("producer-sleep-counter-2")
 HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
 IF true
 DO
@@ -55,7 +55,7 @@ RULE send producer addItem method invocations to thermostat
 CLASS Producer
 METHOD addItem
 AT ENTRY
-BIND counterValue: int = readCounter("producer-add-counter")
+BIND counterValue: int = readCounter("producer-add-counter-2")
 HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
 IF true
 DO
@@ -66,7 +66,7 @@ RULE send consumer sleep method invocations to thermostat
 CLASS Consumer
 METHOD sleep
 AT ENTRY
-BIND counterValueSleep: int = readCounter("consumer-sleep-counter")
+BIND counterValueSleep: int = readCounter("consumer-sleep-counter-2")
 HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
 IF true
 DO
@@ -77,7 +77,7 @@ RULE send consumer removeItem method invocations to thermostat
 CLASS Consumer
 METHOD removeItem
 AT ENTRY
-BIND counterValue: int = readCounter("consumer-remove-counter")
+BIND counterValue: int = readCounter("consumer-remove-counter-2")
 HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
 IF true
 DO

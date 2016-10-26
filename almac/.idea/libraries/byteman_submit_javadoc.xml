@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="byteman-submit-javadoc">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/byteman/javadoc/byteman-submit/byteman-submit-javadoc.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

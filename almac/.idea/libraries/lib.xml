@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/byteman/lib/byteman.jar!/" />
+      <root url="jar://$PROJECT_DIR$/byteman/lib/byteman-submit.jar!/" />
+      <root url="jar://$PROJECT_DIR$/byteman/lib/byteman-install.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
