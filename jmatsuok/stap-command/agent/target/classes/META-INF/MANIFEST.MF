@@ -1,0 +1,20 @@
+Manifest-Version: 1.0
+Bundle-Description: Allows running system tap scrips from thermostat
+Bundle-SymbolicName: com.redhat.thermostat.stap.agent
+Built-By: jmatsuok
+Bundle-ManifestVersion: 2
+Bnd-LastModified: 1477491400834
+Bundle-Vendor: Red Hat, Inc.
+Import-Package: com.redhat.thermostat.backend,com.redhat.thermostat.co
+ mmon,com.redhat.thermostat.stap.agent,com.redhat.thermostat.stap.comm
+ on,com.redhat.thermostat.storage.core,org.osgi.framework;version="1.6
+ "
+Tool: Bnd-0.0.238
+Export-Package: com.redhat.thermostat.stap.agent
+Bundle-Version: 1.99.12.SNAPSHOT
+Bundle-Name: Thermostat SystemTap plugin agent
+Private-Package: com.redhat.thermostat.stap.agent.internal
+Bundle-Activator: com.redhat.thermostat.stap.agent.internal.Activator
+Created-By: Apache Maven Bundle Plugin
+Build-Jdk: 1.8.0_111
+

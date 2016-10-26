@@ -1,0 +1,21 @@
+Manifest-Version: 1.0
+Bundle-Description: Allows running system tap scrips from thermostat
+Bundle-SymbolicName: com.redhat.thermostat.stap.common
+Built-By: jmatsuok
+Bundle-ManifestVersion: 2
+Bnd-LastModified: 1477488989466
+Bundle-Vendor: Red Hat, Inc.
+Import-Package: com.redhat.thermostat.common.utils,com.redhat.thermost
+ at.stap.common,com.redhat.thermostat.storage.core,com.redhat.thermost
+ at.storage.core.auth,com.redhat.thermostat.storage.dao,com.redhat.the
+ rmostat.storage.model
+Service-Component: OSGI-INF/com.redhat.thermostat.stap.common.internal
+ .StapDAOImpl.xml
+Tool: Bnd-0.0.238
+Export-Package: com.redhat.thermostat.stap.common
+Bundle-Version: 1.99.12.SNAPSHOT
+Bundle-Name: Thermostat SystemTap plugin common
+Private-Package: com.redhat.thermostat.stap.common.internal
+Created-By: Apache Maven Bundle Plugin
+Build-Jdk: 1.8.0_111
+

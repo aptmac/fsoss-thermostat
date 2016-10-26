@@ -1,0 +1,2346 @@
+diff --git a/distribution/assembly/all-plugin-assembly.xml b/distribution/assembly/all-plugin-assembly.xml
+--- a/distribution/assembly/all-plugin-assembly.xml
++++ b/distribution/assembly/all-plugin-assembly.xml
+@@ -80,6 +80,7 @@
+         <include>com.redhat.thermostat:thermostat-platform-swing-distribution</include>
+         <include>com.redhat.thermostat:thermostat-dependency-tool-distribution</include>
+         <include>com.redhat.thermostat:thermostat-gui-distribution</include>
++        <include>com.redhat.thermostat:thermostat-stap-distribution</include>
+       </includes>
+     </dependencySet>  
+   </dependencySets>
+diff --git a/distribution/pom.xml b/distribution/pom.xml
+--- a/distribution/pom.xml
++++ b/distribution/pom.xml
+@@ -671,6 +671,12 @@
+       <version>${project.version}</version>
+       <type>zip</type>
+     </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-stap-distribution</artifactId>
++      <version>${project.version}</version>
++      <type>zip</type>
++    </dependency>
+     <!-- thermostat-vm-byteman-distribution does not depend on
+          thermostat-vm-byteman-helper. List it explicitly so
+          that copy deps works. -->
+diff --git a/pom.xml b/pom.xml
+--- a/pom.xml
++++ b/pom.xml
+@@ -66,7 +66,7 @@
+       <properties>
+         <script.extension>.sh</script.extension>
+         <c.compiler>gcc</c.compiler>
+-        <cflags></cflags>
++        <cflags/>
+         <jni.platform>linux</jni.platform>
+         <sharedlib.prefix>lib</sharedlib.prefix>
+         <sharedlib.suffix>.so</sharedlib.suffix>
+@@ -84,7 +84,7 @@
+         <cflags>-std=c99</cflags>
+         <cygwin.dir>c:/cygwin64</cygwin.dir>
+         <jni.platform>win32</jni.platform>
+-        <sharedlib.prefix></sharedlib.prefix>
++        <sharedlib.prefix/>
+         <sharedlib.suffix>.dll</sharedlib.suffix>
+       </properties>
+     </profile>
+@@ -381,6 +381,7 @@
+     <module>integration-tests</module>
+     <module>dev</module>
+     <module>dependency-tool</module>
++    <module>stap-command</module>
+   </modules>
+ 
+   <build>
+@@ -802,4 +803,4 @@
+     <url>http://icedtea.classpath.org/hg/thermostat</url>
+   </scm>
+ 
+-</project>
++</project>
+\ No newline at end of file
+diff --git a/stap-command/agent/pom.xml b/stap-command/agent/pom.xml
+new file mode 100644
+--- /dev/null
++++ b/stap-command/agent/pom.xml
+@@ -0,0 +1,115 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!--
++
++ Copyright 2012-2016 Red Hat, Inc.
++
++ This file is part of Thermostat.
++
++ Thermostat is free software; you can redistribute it and/or modify
++ it under the terms of the GNU General Public License as published
++ by the Free Software Foundation; either version 2, or (at your
++ option) any later version.
++
++ Thermostat is distributed in the hope that it will be useful, but
++ WITHOUT ANY WARRANTY; without even the implied warranty of
++ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ General Public License for more details.
++
++ You should have received a copy of the GNU General Public License
++ along with Thermostat; see the file COPYING.  If not see
++ <http://www.gnu.org/licenses/>.
++
++ Linking this code with other modules is making a combined work
++ based on this code.  Thus, the terms and conditions of the GNU
++ General Public License cover the whole combination.
++
++ As a special exception, the copyright holders of this code give
++ you permission to link this code with independent modules to
++ produce an executable, regardless of the license terms of these
++ independent modules, and to copy and distribute the resulting
++ executable under terms of your choice, provided that you also
++ meet, for each linked independent module, the terms and conditions
++ of the license of that module.  An independent module is a module
++ which is not derived from or based on this code.  If you modify
++ this code, you may extend this exception to your version of the
++ library, but you are not obligated to do so.  If you do not wish
++ to do so, delete this exception statement from your version.
++
++-->
++<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++    <parent>
++        <groupId>com.redhat.thermostat</groupId>
++        <artifactId>thermostat-stap</artifactId>
++        <version>1.99.12-SNAPSHOT</version>
++    </parent>
++
++    <artifactId>thermostat-stap-agent</artifactId>
++    <packaging>bundle</packaging>
++
++    <name>Thermostat SystemTap plugin agent</name>
++
++    <build>
++        <plugins>
++            <plugin>
++                <groupId>org.apache.felix</groupId>
++                <artifactId>maven-bundle-plugin</artifactId>
++                <extensions>true</extensions>
++                <configuration>
++                    <instructions>
++                        <Bundle-SymbolicName>com.redhat.thermostat.stap.agent</Bundle-SymbolicName>
++                        <Bundle-Vendor>Red Hat, Inc.</Bundle-Vendor>
++                        <Private-Package>
++                            com.redhat.thermostat.stap.agent.internal,
++                        </Private-Package>
++                        <Export-Package>
++                            com.redhat.thermostat.stap.agent
++                        </Export-Package>
++                        <Bundle-Activator>com.redhat.thermostat.stap.agent.internal.Activator</Bundle-Activator>
++                        <!-- Do not autogenerate uses clauses in Manifests -->
++                        <_nouses>true</_nouses>
++                    </instructions>
++                </configuration>
++            </plugin>
++        </plugins>
++    </build>
++
++    <dependencies>
++        <dependency>
++            <groupId>junit</groupId>
++            <artifactId>junit</artifactId>
++            <scope>test</scope>
++        </dependency>
++        <dependency>
++            <groupId>org.mockito</groupId>
++            <artifactId>mockito-core</artifactId>
++            <scope>test</scope>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-common-test</artifactId>
++            <version>${project.version}</version>
++            <scope>test</scope>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-common-core</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-client-cli</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-shared-config</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-stap-common</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++    </dependencies>
++</project>
+diff --git a/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/StapBackend.java b/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/StapBackend.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/StapBackend.java
+@@ -0,0 +1,193 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.agent;
++
++import com.redhat.thermostat.backend.BaseBackend;
++import com.redhat.thermostat.backend.BackendService;
++import com.redhat.thermostat.common.ApplicationService;
++import com.redhat.thermostat.common.Timer;
++import com.redhat.thermostat.common.TimerFactory;
++import com.redhat.thermostat.common.Version;
++import com.redhat.thermostat.stap.common.StapDAO;
++import com.redhat.thermostat.stap.common.StapData;
++import com.redhat.thermostat.storage.core.WriterID;
++import com.sun.xml.internal.rngom.parse.xml.SAXParseable;
++
++import java.io.IOException;
++import java.util.List;
++import java.util.ArrayList;
++import java.io.BufferedReader;
++import java.io.InputStreamReader;
++import java.io.FileInputStream;
++import java.io.FileNotFoundException;
++import java.nio.charset.StandardCharsets;
++import java.util.concurrent.TimeUnit;
++
++public class StapBackend extends BaseBackend {
++
++    private static final String SCRIPT_TEST = "/home/Jmatsuok/IdeaProjects/FSOSS-2016/scripts/thermostat-stap.sh";
++    private static final String SCRIPT_OUTPUT = "/home/jmatsuok/stap-out.txt";
++    private static final String STAP_SCRIPT = "/home/Jmatsuok/IdeaProjects/FSOSS-2016/scripts/tcp.stp";
++    private ApplicationService appService;
++    private StapDAO stapDAO;
++    private WriterID writerId;
++    private Timer timer;
++    boolean started;
++
++    public StapBackend(ApplicationService appService, StapDAO stapDAO, Version version, WriterID writerID) {
++        super("SystemTap Backend", "Gathers packet information from SystemTap", "Red Hat Inc.", version.getVersionNumber());
++        this.appService = appService;
++        this.stapDAO = stapDAO;
++        this.writerId = writerID;
++    }
++
++    public StapBackend(String name, String description, String vendor, String version) {
++        super(name, description, vendor, version);
++    }
++
++    @Override
++    public boolean activate() {
++        started = true;
++        TimerFactory tf = appService.getTimerFactory();
++        timer = tf.createTimer();
++        timer.setDelay(1);
++        timer.setInitialDelay(0);
++        timer.setSchedulingType(Timer.SchedulingType.FIXED_DELAY);
++        timer.setTimeUnit(TimeUnit.SECONDS);
++        timer.setAction(new Runnable() {
++            @Override
++            public void run() {
++                saveData(parsedRawOutput(parseOutput()));
++            }
++        });
++        started = true;
++        timer.start();
++        try {
++            runScript();
++        } catch (IOException ioe) {
++            System.out.println(ioe.getMessage());
++        } catch (Exception e) {
++            System.out.println(e.getMessage());
++        }
++        return true;
++    }
++
++    private void saveData(List<StapData> data) {
++        for (StapData s : data) {
++            stapDAO.saveStapData(s);
++        }
++    }
++
++    private List<StapData> parsedRawOutput(List<String> rawOutput) {
++        List<StapData> parsedOutput = new ArrayList<StapData>();
++        for (String s : rawOutput) {
++            String[] raw = sanitize(s.split(" "));
++            StapData st = new StapData();
++            st.setAgentId(raw[0]+":"+raw[2]);
++            st.setVmId(raw[1]+":"+raw[3]);
++            st.setStapMetric(raw[4]+raw[5]+raw[6]+raw[7]+raw[8]);
++            parsedOutput.add(st);
++        }
++        return parsedOutput;
++    }
++
++    @Override
++    public boolean deactivate() {
++        return false;
++    }
++
++    @Override
++    public boolean isActive() {
++        return started;
++    }
++
++    @Override
++    public int getOrderValue() {
++        return ORDER_MEMORY_GROUP + 81;
++    }
++
++    private String[] sanitize(String[] input) {
++        String[] sanitized = new String[10];
++        int j = 0;
++        for (int i = 0; i < input.length; i++) {
++            if (!input[i].equals("")) {
++                sanitized[j] = input[i];
++                j++;
++            }
++        }
++        return sanitized;
++    }
++
++    private void runScript() throws IOException {
++        List<String> tmp = new ArrayList<String>();
++        Process proc = null;
++        tmp.add(SCRIPT_TEST);
++        try {
++            ProcessBuilder pb = new ProcessBuilder(SCRIPT_TEST, STAP_SCRIPT);
++            proc = pb.start();
++        } catch (IOException ioe) {
++            System.out.println(ioe.getMessage());
++            throw ioe;
++        }
++        finally {
++            proc.destroy();
++        }
++    }
++
++    private List<String> parseOutput() {
++        String line = null;
++        List<String> lines = new ArrayList<String>();
++        try {
++            BufferedReader br = new BufferedReader(
++                    new InputStreamReader(
++                            new FileInputStream(SCRIPT_OUTPUT), StandardCharsets.UTF_8));
++            while ((line = br.readLine()) != null ) {
++                lines.add(line);
++            }
++        }
++        catch (FileNotFoundException fnfe) {
++            System.out.println("File: " + SCRIPT_OUTPUT + " could not be read.");
++            System.out.println(fnfe.getMessage());
++        }
++        catch (IOException ioe) {
++            System.out.println("Error reading File: " + SCRIPT_OUTPUT);
++            System.out.println(ioe.getMessage());
++        }
++
++        return lines;
++    }
++}
+diff --git a/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/internal/Activator.java b/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/internal/Activator.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/internal/Activator.java
+@@ -0,0 +1,62 @@
++package com.redhat.thermostat.stap.agent.internal;
++
++import com.redhat.thermostat.backend.Backend;
++import com.redhat.thermostat.backend.BackendService;
++import com.redhat.thermostat.common.ApplicationService;
++import com.redhat.thermostat.common.MultipleServiceTracker;
++import com.redhat.thermostat.common.Version;
++import com.redhat.thermostat.stap.agent.StapBackend;
++import com.redhat.thermostat.stap.common.StapDAO;
++import com.redhat.thermostat.storage.core.WriterID;
++import org.osgi.framework.BundleActivator;
++import org.osgi.framework.BundleContext;
++import org.osgi.framework.ServiceRegistration;
++
++import java.util.Map;
++
++/**
++ * Created by jmatsuok on 25/10/16.
++ */
++public class Activator implements BundleActivator {
++
++    private MultipleServiceTracker tracker;
++    private StapBackend backend;
++    private ServiceRegistration<Backend> reg;
++
++    @Override
++    public void start(final BundleContext context) {
++
++        Class<?>[] deps = new Class<?>[] {
++                BackendService.class,
++                StapDAO.class,
++                ApplicationService.class,
++                WriterID.class, // numa backend uses it
++        };
++        tracker = new MultipleServiceTracker(context, deps, new MultipleServiceTracker.Action() {
++
++            @Override
++            public void dependenciesAvailable(Map<String, Object> services) {
++                ApplicationService appService = (ApplicationService) services.get(ApplicationService.class.getName());
++                StapDAO stapDAO = (StapDAO) services.get(StapDAO.class.getName());
++                Version version = new Version(context.getBundle());
++                WriterID writerId = (WriterID) services.get(WriterID.class.getName());
++                backend = new StapBackend(appService, stapDAO, version, writerId);
++                reg = context.registerService(Backend.class, backend, null);
++            }
++
++            @Override
++            public void dependenciesUnavailable() {
++                if (backend.isActive()) {
++                    backend.deactivate();
++                }
++                reg.unregister();
++            }
++        });
++        tracker.open();
++    }
++
++    @Override
++    public void stop(BundleContext context) throws Exception {
++        tracker.close();
++    }
++}
+diff --git a/stap-command/command/pom.xml b/stap-command/command/pom.xml
+new file mode 100644
+--- /dev/null
++++ b/stap-command/command/pom.xml
+@@ -0,0 +1,139 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!--
++
++ Copyright 2012-2016 Red Hat, Inc.
++
++ This file is part of Thermostat.
++
++ Thermostat is free software; you can redistribute it and/or modify
++ it under the terms of the GNU General Public License as published
++ by the Free Software Foundation; either version 2, or (at your
++ option) any later version.
++
++ Thermostat is distributed in the hope that it will be useful, but
++ WITHOUT ANY WARRANTY; without even the implied warranty of
++ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ General Public License for more details.
++
++ You should have received a copy of the GNU General Public License
++ along with Thermostat; see the file COPYING.  If not see
++ <http://www.gnu.org/licenses/>.
++
++ Linking this code with other modules is making a combined work
++ based on this code.  Thus, the terms and conditions of the GNU
++ General Public License cover the whole combination.
++
++ As a special exception, the copyright holders of this code give
++ you permission to link this code with independent modules to
++ produce an executable, regardless of the license terms of these
++ independent modules, and to copy and distribute the resulting
++ executable under terms of your choice, provided that you also
++ meet, for each linked independent module, the terms and conditions
++ of the license of that module.  An independent module is a module
++ which is not derived from or based on this code.  If you modify
++ this code, you may extend this exception to your version of the
++ library, but you are not obligated to do so.  If you do not wish
++ to do so, delete this exception statement from your version.
++
++-->
++<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++  <modelVersion>4.0.0</modelVersion>
++  <parent>
++    <groupId>com.redhat.thermostat</groupId>
++    <artifactId>thermostat-stap</artifactId>
++    <version>1.99.12-SNAPSHOT</version>
++  </parent>
++  <artifactId>thermostat-stap-command</artifactId>
++  <packaging>bundle</packaging>
++  <name>Thermostat SystemTap plugin</name>
++  <build>
++    <plugins>
++      <plugin>
++        <groupId>org.apache.felix</groupId>
++        <artifactId>maven-bundle-plugin</artifactId>
++        <extensions>true</extensions>
++        <configuration>
++          <instructions>
++            <Bundle-Vendor>Red Hat, Inc.</Bundle-Vendor>
++            <Bundle-SymbolicName>com.redhat.thermostat.stap.command</Bundle-SymbolicName>
++            <Private-Package>
++              com.redhat.thermostat.stap.command.internal,
++            </Private-Package>
++            <!-- Do not autogenerate uses clauses in Manifests -->
++            <_nouses>true</_nouses>
++          </instructions>
++        </configuration>
++      </plugin>
++      <plugin>
++        <groupId>org.apache.felix</groupId>
++        <artifactId>maven-scr-plugin</artifactId>
++        <executions>
++          <execution>
++            <id>generate-scr-scrdescriptor</id>
++            <goals>
++              <goal>scr</goal>
++            </goals>
++          </execution>
++        </executions>
++      </plugin>
++    </plugins>
++  </build>
++  <dependencies>
++    <dependency>
++      <groupId>junit</groupId>
++      <artifactId>junit</artifactId>
++      <scope>test</scope>
++    </dependency>
++    <dependency>
++      <groupId>org.mockito</groupId>
++      <artifactId>mockito-core</artifactId>
++      <scope>test</scope>
++    </dependency>
++    <dependency>
++      <groupId>org.osgi</groupId>
++      <artifactId>org.osgi.core</artifactId>
++      <scope>provided</scope>
++    </dependency>
++    <dependency>
++      <groupId>org.osgi</groupId>
++      <artifactId>org.osgi.compendium</artifactId>
++      <scope>provided</scope>
++    </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-common-test</artifactId>
++      <version>${project.version}</version>
++      <scope>test</scope>
++    </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-common-core</artifactId>
++      <version>${project.version}</version>
++    </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-client-cli</artifactId>
++      <version>${project.version}</version>
++    </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-shared-config</artifactId>
++      <version>${project.version}</version>
++    </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-stap-common</artifactId>
++      <version>${project.version}</version>
++    </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-stap-agent</artifactId>
++      <version>${project.version}</version>
++    </dependency>
++    <dependency>
++      <groupId>org.apache.felix</groupId>
++      <artifactId>org.apache.felix.scr.annotations</artifactId>
++    </dependency>
++  </dependencies>
++</project>
++
+diff --git a/stap-command/command/src/main/java/com/redhat/thermostat/stap/command/internal/StapCommand.java b/stap-command/command/src/main/java/com/redhat/thermostat/stap/command/internal/StapCommand.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/command/src/main/java/com/redhat/thermostat/stap/command/internal/StapCommand.java
+@@ -0,0 +1,104 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.command.internal;
++
++import com.redhat.thermostat.stap.common.StapData;
++import com.redhat.thermostat.storage.core.AgentId;
++import com.redhat.thermostat.storage.core.StatementDescriptor;
++import com.redhat.thermostat.storage.core.VmId;
++import org.apache.felix.scr.annotations.Component;
++import org.apache.felix.scr.annotations.Property;
++import org.apache.felix.scr.annotations.Reference;
++import org.apache.felix.scr.annotations.ReferenceCardinality;
++import org.apache.felix.scr.annotations.ReferencePolicy;
++import org.apache.felix.scr.annotations.References;
++import org.apache.felix.scr.annotations.Service;
++
++import com.redhat.thermostat.stap.agent.StapBackend;
++import com.redhat.thermostat.common.cli.Command;
++import com.redhat.thermostat.common.cli.CommandContext;
++import com.redhat.thermostat.common.cli.CommandException;
++import com.redhat.thermostat.common.cli.DependencyServices;
++import com.redhat.thermostat.stap.common.StapDAO;
++
++import java.util.List;
++
++@Component
++@Service
++@Property(name = Command.NAME, value = "stap")
++@References({
++        @Reference(name = "stapDao", referenceInterface = StapDAO.class, policy = ReferencePolicy.DYNAMIC, cardinality = ReferenceCardinality.OPTIONAL_UNARY),
++        })
++public class StapCommand implements Command {
++
++    private static final String SCRIPT_PATH = "/home/Jmatsuok/FSOSS-2016/stap/gc.stp";
++    private static final String SCRIPT_OUTPUT = "/home/Jmatsuok/packet-output.txt";
++    public static final String NAME = "stap";
++
++    private StapDAO stapDao;
++    private DependencyServices dependencyServices = new DependencyServices();
++
++    public void run(CommandContext ctx) throws CommandException {
++        stapDao = dependencyServices.getService(StapDAO.class);
++        if (stapDao == null) {
++            System.out.println("StapDAO unavailable.");
++        }
++        if (ctx.getArguments().getNonOptionArguments().size() != 1) {
++            System.out.println("Must supply an IP Address/Port");
++            return;
++        }
++        long count = stapDao.getCount(ctx.getArguments().getNonOptionArguments().get(0));
++        System.out.println(ctx.getArguments().getNonOptionArguments().get(0) +
++                " Received " + count + " Packets");
++        System.out.println(stapDao.getDistinctIPs().toString());
++
++    }
++
++    public boolean isStorageRequired() {
++        return true;
++    }
++
++    void bindStapDao(StapDAO dao) {
++        dependencyServices.addService(StapDAO.class, dao);
++    }
++
++    void unbindStapDao(StapDAO dao) {
++        dependencyServices.removeService(StapDAO.class);
++    }
++
++}
++
+diff --git a/stap-command/command/src/test/resources/correctPlugin.xml b/stap-command/command/src/test/resources/correctPlugin.xml
+new file mode 100644
+--- /dev/null
++++ b/stap-command/command/src/test/resources/correctPlugin.xml
+@@ -0,0 +1,15 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<plugin xmlns="http://icedtea.classpath.org/thermostat/plugins/v1.0"
++xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++xsi:schemaLocation="http://icedtea.classpath.org/thermostat/plugins/v1.0 thermostat-plugin.xsd">
++  <extensions>
++    <extension>
++      <name>test</name>
++      <bundles>
++        <bundle><symbolic-name>foo</symbolic-name><version>1</version></bundle>
++        <bundle><symbolic-name>bar</symbolic-name><version>2</version></bundle>
++        <bundle><symbolic-name>baz</symbolic-name><version>3</version></bundle>
++      </bundles>
++    </extension>
++  </extensions>
++</plugin>
+diff --git a/stap-command/command/src/test/resources/incorrectPlugin.xml b/stap-command/command/src/test/resources/incorrectPlugin.xml
+new file mode 100644
+--- /dev/null
++++ b/stap-command/command/src/test/resources/incorrectPlugin.xml
+@@ -0,0 +1,18 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<plugin xmlns="http://icedtea.classpath.org/thermostat/plugins/v1.0"
++xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++xsi:schemaLocation="http://icedtea.classpath.org/thermostat/plugins/v1.0 thermostat-plugin.xsd">
++  <extensions>
++    <extension>
++      <name>test</name>
++      <bundles>
++        <bundle><symbolic-name>foo</symbolic-name><version>1</version></bundle>
++        <bundle><symbolic-name>bar</symbolic-name></bundle>
++        <bundle>baz</bundle>
++      </bundles>
++      <dependencies>
++        <dependency>thermostat-foo</dependency>
++      </dependencies>
++    </extension>
++  </extensions>
++</plugin>
+diff --git a/stap-command/common/pom.xml b/stap-command/common/pom.xml
+new file mode 100644
+--- /dev/null
++++ b/stap-command/common/pom.xml
+@@ -0,0 +1,152 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!--
++
++ Copyright 2012-2016 Red Hat, Inc.
++
++ This file is part of Thermostat.
++
++ Thermostat is free software; you can redistribute it and/or modify
++ it under the terms of the GNU General Public License as published
++ by the Free Software Foundation; either version 2, or (at your
++ option) any later version.
++
++ Thermostat is distributed in the hope that it will be useful, but
++ WITHOUT ANY WARRANTY; without even the implied warranty of
++ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ General Public License for more details.
++
++ You should have received a copy of the GNU General Public License
++ along with Thermostat; see the file COPYING.  If not see
++ <http://www.gnu.org/licenses/>.
++
++ Linking this code with other modules is making a combined work
++ based on this code.  Thus, the terms and conditions of the GNU
++ General Public License cover the whole combination.
++
++ As a special exception, the copyright holders of this code give
++ you permission to link this code with independent modules to
++ produce an executable, regardless of the license terms of these
++ independent modules, and to copy and distribute the resulting
++ executable under terms of your choice, provided that you also
++ meet, for each linked independent module, the terms and conditions
++ of the license of that module.  An independent module is a module
++ which is not derived from or based on this code.  If you modify
++ this code, you may extend this exception to your version of the
++ library, but you are not obligated to do so.  If you do not wish
++ to do so, delete this exception statement from your version.
++
++-->
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <parent>
++        <artifactId>thermostat-stap</artifactId>
++        <groupId>com.redhat.thermostat</groupId>
++        <version>1.99.12-SNAPSHOT</version>
++    </parent>
++    <modelVersion>4.0.0</modelVersion>
++
++    <artifactId>thermostat-stap-common</artifactId>
++    <packaging>bundle</packaging>
++
++    <name>Thermostat SystemTap plugin common</name>
++
++    <build>
++        <plugins>
++            <plugin>
++                <groupId>org.apache.felix</groupId>
++                <artifactId>maven-bundle-plugin</artifactId>
++                <extensions>true</extensions>
++                <configuration>
++                    <instructions>
++                        <Bundle-Vendor>Red Hat, Inc.</Bundle-Vendor>
++                        <Bundle-SymbolicName>com.redhat.thermostat.stap.common</Bundle-SymbolicName>
++                        <Export-Package>
++                            com.redhat.thermostat.stap.common
++                        </Export-Package>
++                        <Private-Package>
++                            com.redhat.thermostat.stap.common.internal,
++                        </Private-Package>
++                        <!-- Do not autogenerate uses clauses in Manifests -->
++                        <_nouses>true</_nouses>
++                    </instructions>
++                </configuration>
++            </plugin>
++            <plugin>
++                <groupId>org.apache.felix</groupId>
++                <artifactId>maven-scr-plugin</artifactId>
++                <executions>
++                    <execution>
++                        <id>generate-scr-scrdescriptor</id>
++                        <goals>
++                            <goal>scr</goal>
++                        </goals>
++                    </execution>
++                </executions>
++            </plugin>
++        </plugins>
++    </build>
++    <dependencies>
++        <dependency>
++            <groupId>junit</groupId>
++            <artifactId>junit</artifactId>
++            <scope>test</scope>
++        </dependency>
++        <dependency>
++            <groupId>org.mockito</groupId>
++            <artifactId>mockito-core</artifactId>
++            <scope>test</scope>
++        </dependency>
++        <dependency>
++            <groupId>org.osgi</groupId>
++            <artifactId>org.osgi.core</artifactId>
++            <scope>provided</scope>
++        </dependency>
++        <dependency>
++            <groupId>org.osgi</groupId>
++            <artifactId>org.osgi.compendium</artifactId>
++            <scope>provided</scope>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-common-test</artifactId>
++            <version>${project.version}</version>
++            <scope>test</scope>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-common-core</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-client-cli</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-shared-config</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-storage-core</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-agent-core</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-client-command</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>org.apache.felix</groupId>
++            <artifactId>org.apache.felix.scr.annotations</artifactId>
++        </dependency>
++    </dependencies>
++
++</project>
+\ No newline at end of file
+diff --git a/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapDAO.java b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapDAO.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapDAO.java
+@@ -0,0 +1,57 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.common;
++
++import java.util.List;
++import java.util.Set;
++
++import com.redhat.thermostat.annotations.Service;
++import com.redhat.thermostat.storage.core.VmId;
++import com.redhat.thermostat.storage.core.AgentId;
++
++@Service
++public interface StapDAO {
++
++    void saveStapData(final StapData data);
++
++    long getCount(final String source);
++
++    List<StapData> getAll();
++
++    Set<String> getDistinctIPs();
++
++}
+diff --git a/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapData.java b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapData.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapData.java
+@@ -0,0 +1,93 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.common;
++
++import com.redhat.thermostat.storage.core.Entity;
++import com.redhat.thermostat.storage.core.Persist;
++import com.redhat.thermostat.storage.model.BasePojo;
++import com.redhat.thermostat.storage.model.TimeStampedPojo;
++
++import java.util.Objects;
++
++@Entity
++public class StapData extends BasePojo implements TimeStampedPojo {
++
++    private String VmId;
++    private long timeStamp;
++    private String stapMetric;
++
++    public StapData() {
++        super(null);
++        setStapMetric("");
++    }
++
++    public StapData(String writerId) {
++        super(writerId);
++    }
++
++    @Override
++    @Persist
++    public long getTimeStamp() {
++        return timeStamp;
++    }
++
++    @Persist
++    public void setTimeStamp(long timeStamp) {
++        this.timeStamp = timeStamp;
++    }
++
++    @Persist
++    public String getVmId() {
++        return VmId;
++    }
++
++    @Persist
++    public void setVmId(String vmId) {
++        this.VmId = vmId;
++    }
++
++    @Persist
++    public String getStapMetric() {
++        return stapMetric;
++    }
++
++    @Persist
++    public void setStapMetric(String packet) {
++        this.stapMetric = packet;
++    }
++
++}
+diff --git a/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOCategoryRegistration.java b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOCategoryRegistration.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOCategoryRegistration.java
+@@ -0,0 +1,55 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.common.internal;
++
++import com.redhat.thermostat.storage.core.auth.CategoryRegistration;
++
++import java.util.HashSet;
++import java.util.Set;
++
++/**
++ * Created by Jmatsuok on 18/10/16.
++ */
++public class StapDAOCategoryRegistration implements CategoryRegistration {
++
++        @Override
++        public Set<String> getCategoryNames() {
++            Set<String> categories = new HashSet<>();
++            categories.add(StapDAOImpl.STAP_CATEGORY.getName());
++            return categories;
++        }
++}
+diff --git a/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImpl.java b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImpl.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImpl.java
+@@ -0,0 +1,169 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.common.internal;
++
++import com.redhat.thermostat.storage.core.Category;
++import com.redhat.thermostat.storage.core.experimental.statement.*;
++import com.redhat.thermostat.storage.dao.AbstractDaoQuery;
++import com.redhat.thermostat.storage.dao.SimpleDaoQuery;
++import com.redhat.thermostat.storage.model.AggregateCount;
++import com.redhat.thermostat.storage.model.DistinctResult;
++import com.redhat.thermostat.storage.model.Pojo;
++import org.apache.felix.scr.annotations.Activate;
++import org.apache.felix.scr.annotations.Component;
++import org.apache.felix.scr.annotations.Reference;
++import org.apache.felix.scr.annotations.Service;
++
++import com.redhat.thermostat.common.utils.LoggingUtils;
++import com.redhat.thermostat.stap.common.StapDAO;
++import com.redhat.thermostat.stap.common.StapData;
++import com.redhat.thermostat.storage.core.*;
++import com.redhat.thermostat.storage.dao.AbstractDao;
++import com.redhat.thermostat.storage.dao.AbstractDaoStatement;
++
++import java.util.Collections;
++import java.util.HashSet;
++import java.util.List;
++import java.util.Set;
++import java.util.logging.Logger;
++
++@Component
++@Service(value = StapDAO.class)
++public class StapDAOImpl extends AbstractDao implements StapDAO {
++
++    Category<AggregateCount> aggregateCountCategory;
++
++    static Key<String> KEY_STAP_METRIC = new Key<>("stapMetric");
++    //static Key<String> SOURCE_IP = new Key<>("srcIP");
++    //static Key<String> DEST_IP = new Key<>("destIP");
++
++    static final Category<StapData> STAP_CATEGORY = new Category<StapData>(
++            "stap-metrics",
++            StapData.class,
++            Key.TIMESTAMP, Key.AGENT_ID, Key.VM_ID,
++            KEY_STAP_METRIC);
++
++    static final String ADD = "ADD " + STAP_CATEGORY.getName()
++            + " SET '" + Key.AGENT_ID.getName() + "' = ?s , "
++            + "     '" + Key.VM_ID.getName() + "' = ?s , "
++            + "     '" + Key.TIMESTAMP.getName() + "' = ?l , "
++            + "     '" + KEY_STAP_METRIC.getName() + "' = ?s";
++
++    static final String QUERY_COUNT_PACKETS_BY_SOURCE_IP = ""
++            + "QUERY-COUNT " + STAP_CATEGORY.getName() + " "
++            + "WHERE '" + Key.AGENT_ID.getName() + "' = ?s";
++
++    static final String QUERY_ALL = "" +
++            "QUERY-DISTINCT(" + Key.AGENT_ID.getName() +") " + STAP_CATEGORY.getName()
++            + " WHERE '" + Key.ID.getName() + "' = ?s";
++
++    //static final String QUERY_UNIQUE = ""
++    //        + "QUERY DISTINCT" + STAP_CATEGORY.getName();
++    private static final Logger logger = LoggingUtils.getLogger(StapDAOImpl.class);
++
++    @Reference
++    private Storage storage;
++
++    private Category<DistinctResult> aggregateCategory;
++
++    public StapDAOImpl() {
++
++    }
++
++    public StapDAOImpl(Storage storage) {
++        this.storage = storage;
++    }
++
++    @Activate
++    private void activate() {
++        storage.registerCategory(STAP_CATEGORY);
++        CategoryAdapter<StapData, AggregateCount> adapter = new CategoryAdapter<>(STAP_CATEGORY);
++        CategoryAdapter<StapData, DistinctResult> adapter2 = new CategoryAdapter<>(STAP_CATEGORY);
++        aggregateCategory = adapter2.getAdapted(DistinctResult.class);
++        aggregateCountCategory = adapter.getAdapted(AggregateCount.class);
++        storage.registerCategory(aggregateCountCategory);
++    }
++
++    @Override
++    public List<StapData> getAll() {
++        return executeQuery(new SimpleDaoQuery<>(storage, STAP_CATEGORY, QUERY_ALL)).asList();
++    }
++
++    @Override
++    public void saveStapData(final StapData data) {
++        executeStatement(new AbstractDaoStatement<StapData>(storage, STAP_CATEGORY, ADD) {
++            @Override
++            public PreparedStatement<StapData> customize(PreparedStatement<StapData> ps) {
++                ps.setString(0, data.getAgentId());
++                ps.setString(1, data.getVmId());
++                ps.setLong(2, data.getTimeStamp());
++                ps.setString(3, data.getStapMetric());
++                return ps;
++            }
++        });
++    }
++
++    @Override
++    public long getCount(final String source) {
++        return executeQuery(new AbstractDaoQuery<AggregateCount>(storage, aggregateCountCategory, QUERY_COUNT_PACKETS_BY_SOURCE_IP) {
++            @Override
++            public PreparedStatement<AggregateCount> customize(PreparedStatement<AggregateCount> preparedStatement) {
++                preparedStatement.setString(0, source);
++                return preparedStatement;
++            }
++        }).head().getCount();
++    }
++
++    @Override
++    public Set<String> getDistinctIPs() {
++        DistinctResult dr = executeQuery(new AbstractDaoQuery<DistinctResult>(storage, aggregateCategory, QUERY_ALL) {
++            @Override
++            public PreparedStatement<DistinctResult> customize(PreparedStatement<DistinctResult> preparedStatement) {
++                return preparedStatement;
++            }
++        }).head();
++        Set<String> unique = new HashSet<>();
++        if (dr != null) {
++            Collections.addAll(unique, dr.getValues());
++        }
++        return unique;
++    }
++
++    @Override
++    protected Logger getLogger() { return logger; }
++
++}
+diff --git a/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImplStatementDescriptorRegistration.java b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImplStatementDescriptorRegistration.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImplStatementDescriptorRegistration.java
+@@ -0,0 +1,65 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.common.internal;
++
++import com.redhat.thermostat.storage.core.VmLatestPojoListGetter;
++import com.redhat.thermostat.storage.core.auth.StatementDescriptorRegistration;
++
++import java.util.HashSet;
++import java.util.Set;
++
++/**
++ * Created by Jmatsuok on 18/10/16.
++ */
++public class StapDAOImplStatementDescriptorRegistration implements StatementDescriptorRegistration{
++
++
++        private final Set<String> descs;
++
++        public StapDAOImplStatementDescriptorRegistration() {
++            descs = new HashSet<>();
++            descs.add(StapDAOImpl.ADD);
++            descs.add(StapDAOImpl.QUERY_COUNT_PACKETS_BY_SOURCE_IP);
++            descs.add(StapDAOImpl.QUERY_ALL);
++        }
++
++        @Override
++        public Set<String> getStatementDescriptors() {
++            return descs;
++        }
++
++    }
+diff --git a/stap-command/common/src/main/resources/META-INF/services/com.redhat.thermostat.storage.core.auth.CategoryRegistration b/stap-command/common/src/main/resources/META-INF/services/com.redhat.thermostat.storage.core.auth.CategoryRegistration
+new file mode 100644
+--- /dev/null
++++ b/stap-command/common/src/main/resources/META-INF/services/com.redhat.thermostat.storage.core.auth.CategoryRegistration
+@@ -0,0 +1,1 @@
++com.redhat.thermostat.stap.common.internal.StapDAOCategoryRegistration
+\ No newline at end of file
+diff --git a/stap-command/common/src/main/resources/META-INF/services/com.redhat.thermostat.storage.core.auth.StatementDescriptorRegistration b/stap-command/common/src/main/resources/META-INF/services/com.redhat.thermostat.storage.core.auth.StatementDescriptorRegistration
+new file mode 100644
+--- /dev/null
++++ b/stap-command/common/src/main/resources/META-INF/services/com.redhat.thermostat.storage.core.auth.StatementDescriptorRegistration
+@@ -0,0 +1,1 @@
++com.redhat.thermostat.stap.common.internal.StapDAOImplStatementDescriptorRegistration
+\ No newline at end of file
+diff --git a/stap-command/distribution/pom.xml b/stap-command/distribution/pom.xml
+new file mode 100644
+--- /dev/null
++++ b/stap-command/distribution/pom.xml
+@@ -0,0 +1,111 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!--
++
++ Copyright 2012-2016 Red Hat, Inc.
++
++ This file is part of Thermostat.
++
++ Thermostat is free software; you can redistribute it and/or modify
++ it under the terms of the GNU General Public License as published
++ by the Free Software Foundation; either version 2, or (at your
++ option) any later version.
++
++ Thermostat is distributed in the hope that it will be useful, but
++ WITHOUT ANY WARRANTY; without even the implied warranty of
++ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ General Public License for more details.
++
++ You should have received a copy of the GNU General Public License
++ along with Thermostat; see the file COPYING.  If not see
++ <http://www.gnu.org/licenses/>.
++
++ Linking this code with other modules is making a combined work
++ based on this code.  Thus, the terms and conditions of the GNU
++ General Public License cover the whole combination.
++
++ As a special exception, the copyright holders of this code give
++ you permission to link this code with independent modules to
++ produce an executable, regardless of the license terms of these
++ independent modules, and to copy and distribute the resulting
++ executable under terms of your choice, provided that you also
++ meet, for each linked independent module, the terms and conditions
++ of the license of that module.  An independent module is a module
++ which is not derived from or based on this code.  If you modify
++ this code, you may extend this exception to your version of the
++ library, but you are not obligated to do so.  If you do not wish
++ to do so, delete this exception statement from your version.
++
++-->
++<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++  <modelVersion>4.0.0</modelVersion>
++  <parent>
++    <groupId>com.redhat.thermostat</groupId>
++    <artifactId>thermostat-stap</artifactId>
++    <version>1.99.12-SNAPSHOT</version>
++  </parent>
++  
++  <artifactId>thermostat-stap-distribution</artifactId>
++  <packaging>pom</packaging>
++  
++  <name>Thermostat SystemTap plugin distribution</name>
++  
++  <properties>
++    <thermostat.plugin>stap</thermostat.plugin>
++  </properties>
++  
++  <build>
++    <plugins>
++      <plugin>
++        <artifactId>maven-assembly-plugin</artifactId>
++        <dependencies>
++          <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-assembly</artifactId>
++            <version>${project.version}</version>
++          </dependency>
++        </dependencies>
++        <configuration>
++          <descriptorRefs>
++            <descriptorRef>plugin-assembly</descriptorRef>
++          </descriptorRefs>
++          <appendAssemblyId>false</appendAssemblyId>
++        </configuration>
++        <executions>
++          <execution>
++            <id>assemble-plugin</id>
++            <phase>package</phase>
++            <goals>
++              <goal>single</goal>
++            </goals>
++          </execution>
++        </executions>
++      </plugin>
++    </plugins>
++  </build>
++  
++  <!-- Explicitly list all plug-in artifacts, transitive dependencies
++       are not included in assembly. -->
++  <dependencies>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-stap-command</artifactId>
++      <version>${project.version}</version>
++    </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-stap-agent</artifactId>
++      <version>${project.version}</version>
++    </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-stap-common</artifactId>
++      <version>${project.version}</version>
++    </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-stap-gui</artifactId>
++      <version>${project.version}</version>
++    </dependency>
++  </dependencies>
++</project>
++
+diff --git a/stap-command/distribution/thermostat-plugin.xml b/stap-command/distribution/thermostat-plugin.xml
+new file mode 100644
+--- /dev/null
++++ b/stap-command/distribution/thermostat-plugin.xml
+@@ -0,0 +1,87 @@
++<?xml version="1.0"?>
++<!--
++
++ Copyright 2012-2016 Red Hat, Inc.
++
++ This file is part of Thermostat.
++
++ Thermostat is free software; you can redistribute it and/or modify
++ it under the terms of the GNU General Public License as published
++ by the Free Software Foundation; either version 2, or (at your
++ option) any later version.
++
++ Thermostat is distributed in the hope that it will be useful, but
++ WITHOUT ANY WARRANTY; without even the implied warranty of
++ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ General Public License for more details.
++
++ You should have received a copy of the GNU General Public License
++ along with Thermostat; see the file COPYING.  If not see
++ <http://www.gnu.org/licenses/>.
++
++ Linking this code with other modules is making a combined work
++ based on this code.  Thus, the terms and conditions of the GNU
++ General Public License cover the whole combination.
++
++ As a special exception, the copyright holders of this code give
++ you permission to link this code with independent modules to
++ produce an executable, regardless of the license terms of these
++ independent modules, and to copy and distribute the resulting
++ executable under terms of your choice, provided that you also
++ meet, for each linked independent module, the terms and conditions
++ of the license of that module.  An independent module is a module
++ which is not derived from or based on this code.  If you modify
++ this code, you may extend this exception to your version of the
++ library, but you are not obligated to do so.  If you do not wish
++ to do so, delete this exception statement from your version.
++
++-->
++<plugin xmlns="http://icedtea.classpath.org/thermostat/plugins/v1.0"
++  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++  xsi:schemaLocation="http://icedtea.classpath.org/thermostat/plugins/v1.0 thermostat-plugin.xsd">
++  <commands>
++    <command>
++      <name>stap</name>
++      <summary>run a SystemTap script</summary>
++      <description>Run a SystempTap script</description>
++      <environments>
++        <environment>cli</environment>
++        <environment>shell</environment>
++      </environments>
++      <bundles>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.command</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.common</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.agent</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.storage.mongodb</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.web.common</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.web.client</symbolic-name><version>${project.version}</version></bundle>
++      </bundles>
++    </command>
++  </commands>
++  <extensions>
++    <extension>
++      <name>agent</name>
++      <bundles>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.command</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.common</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.agent</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.storage.mongodb</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.web.common</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.web.client</symbolic-name><version>${project.version}</version></bundle>
++      </bundles>
++    </extension>
++    <extension>
++      <name>gui</name>
++      <bundles>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.gui</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.command</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.common</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.stap.agent</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.storage.mongodb</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.web.common</symbolic-name><version>${project.version}</version></bundle>
++        <bundle><symbolic-name>com.redhat.thermostat.web.client</symbolic-name><version>${project.version}</version></bundle>
++      </bundles>
++    </extension>
++  </extensions>
++</plugin>
++
+diff --git a/stap-command/gui/pom.xml b/stap-command/gui/pom.xml
+new file mode 100644
+--- /dev/null
++++ b/stap-command/gui/pom.xml
+@@ -0,0 +1,110 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!--
++
++ Copyright 2012-2016 Red Hat, Inc.
++
++ This file is part of Thermostat.
++
++ Thermostat is free software; you can redistribute it and/or modify
++ it under the terms of the GNU General Public License as published
++ by the Free Software Foundation; either version 2, or (at your
++ option) any later version.
++
++ Thermostat is distributed in the hope that it will be useful, but
++ WITHOUT ANY WARRANTY; without even the implied warranty of
++ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ General Public License for more details.
++
++ You should have received a copy of the GNU General Public License
++ along with Thermostat; see the file COPYING.  If not see
++ <http://www.gnu.org/licenses/>.
++
++ Linking this code with other modules is making a combined work
++ based on this code.  Thus, the terms and conditions of the GNU
++ General Public License cover the whole combination.
++
++ As a special exception, the copyright holders of this code give
++ you permission to link this code with independent modules to
++ produce an executable, regardless of the license terms of these
++ independent modules, and to copy and distribute the resulting
++ executable under terms of your choice, provided that you also
++ meet, for each linked independent module, the terms and conditions
++ of the license of that module.  An independent module is a module
++ which is not derived from or based on this code.  If you modify
++ this code, you may extend this exception to your version of the
++ library, but you are not obligated to do so.  If you do not wish
++ to do so, delete this exception statement from your version.
++
++-->
++<project xmlns="http://maven.apache.org/POM/4.0.0"
++         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++    <modelVersion>4.0.0</modelVersion>
++    <parent>
++        <artifactId>thermostat-stap</artifactId>
++        <groupId>com.redhat.thermostat</groupId>
++        <version>1.99.12-SNAPSHOT</version>
++    </parent>
++    <artifactId>thermostat-stap-gui</artifactId>
++    <packaging>bundle</packaging>
++    <name>Thermostat Stap GUI</name>
++    <build>
++        <plugins>
++            <plugin>
++                <groupId>org.apache.felix</groupId>
++                <artifactId>maven-bundle-plugin</artifactId>
++                <extensions>true</extensions>
++                <configuration>
++                    <instructions>
++                    <Bundle-Vendor>Red Hat, Inc.</Bundle-Vendor>
++                    <Bundle-SymbolicName>com.redhat.thermostat.stap.gui</Bundle-SymbolicName>
++                    <Export-Package>
++                        com.redhat.thermostat.stap.gui
++                    </Export-Package>
++                    <!-- Do not autogenerate uses clauses in Manifests -->
++                    <_nouses>true</_nouses>
++                    </instructions>
++                </configuration>
++            </plugin>
++            <plugin>
++                <groupId>org.apache.felix</groupId>
++                <artifactId>maven-scr-plugin</artifactId>
++                    <executions>
++                    <execution>
++                        <id>generate-scr-scrdescriptor</id>
++                        <goals>
++                            <goal>scr</goal>
++                        </goals>
++                    </execution>
++                </executions>
++            </plugin>
++        </plugins>
++    </build>
++    <dependencies>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-client-core</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-common-core</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-swing-components</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-client-swing</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++        <dependency>
++            <groupId>com.redhat.thermostat</groupId>
++            <artifactId>thermostat-stap-common</artifactId>
++            <version>${project.version}</version>
++        </dependency>
++    </dependencies>
++</project>
+\ No newline at end of file
+diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/LocaleResources.java b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/LocaleResources.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/LocaleResources.java
+@@ -0,0 +1,22 @@
++package com.redhat.thermostat.stap.gui;
++
++import com.redhat.thermostat.shared.locale.Translate;
++/**
++ * Created by jmatsuok on 24/10/16.
++ */
++public enum LocaleResources {
++
++    STAP,
++    STAP_X_AXIS,
++    STAP_Y_AXIS,
++    STAP_HITS,
++    STAP_MISSES,
++    STAP_FOREIGN
++    ;
++
++    static final String RESOURCE_BUNDLE = "com.redhat.thermostat.stap.gui.internal.strings";
++
++    public static Translate<LocaleResources> createLocalizer() {
++        return new Translate<>(RESOURCE_BUNDLE, LocaleResources.class);
++    }
++}
+\ No newline at end of file
+diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationController.java b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationController.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationController.java
+@@ -0,0 +1,84 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.gui;
++
++import com.redhat.thermostat.client.core.controllers.InformationServiceController;
++import com.redhat.thermostat.client.core.views.UIComponent;
++import com.redhat.thermostat.shared.locale.LocalizedString;
++import com.redhat.thermostat.shared.locale.Translate;
++import com.redhat.thermostat.storage.core.VmRef;
++import com.redhat.thermostat.storage.model.DiscreteTimeData;
++import com.redhat.thermostat.stap.common.StapData;
++
++import java.util.HashMap;
++import java.util.List;
++import java.util.ArrayList;
++import java.util.Map;
++
++/**
++ * Created by jmatsuok on 24/10/16.
++ */
++public class StapInformationController implements InformationServiceController<VmRef> {
++
++    private Translate<LocaleResources> t = LocaleResources.createLocalizer();
++    private StapView view;
++
++    public StapInformationController(final StapView view) {
++        this.view = view;
++    }
++
++    public StapInformationController() {
++        this.view = new StapPanel();
++        view.addChart("Hello");
++    }
++
++    @Override
++    public UIComponent getView() {
++        return view;
++    }
++
++    @Override
++    public LocalizedString getLocalizedName() {
++        return t.localize(LocaleResources.STAP);
++    }
++
++    /*private DiscreteTimeData<Double> prepareData(List<StapData> rawData) {
++        for (StapData sd : rawData) {
++            Map<String, List<DiscreteTimeData<Double>[]>> map = new HashMap<>();
++        }
++    }*/
++}
+diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationService.java b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationService.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationService.java
+@@ -0,0 +1,78 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.gui;
++
++import com.redhat.thermostat.client.core.InformationService;
++import com.redhat.thermostat.client.core.controllers.InformationServiceController;
++import com.redhat.thermostat.common.AllPassFilter;
++import com.redhat.thermostat.common.Filter;
++import com.redhat.thermostat.common.Ordered;
++import com.redhat.thermostat.storage.core.VmRef;
++import org.apache.felix.scr.annotations.*;
++
++/**
++ * Created by jmatsuok on 24/10/16.
++ */
++@Component
++@Service(value = InformationService.class)
++@Properties({
++        @Property(name = "com.redhat.thermostat.client.core.InformationService.serviceID",
++        value = "com.redhat.thermostat.stap.gui.StapInformationService"),
++        @Property(name = "GenericClassName",
++                value = "com.redhat.thermostat.storage.core.VmRef")
++        })
++public class StapInformationService implements InformationService<VmRef> {
++
++    /*@Activate
++    public void activate(final BundleContext ctx) {
++        StapViewProvider p = new SwingStapViewProvider();
++        ctx.registerService(StapViewProvider.class.getName(), p, null);
++    }*/
++
++    @Override
++    public Filter<VmRef> getFilter() {
++        return new AllPassFilter<>();
++    }
++
++    @Override
++    public int getOrderValue() { return Ordered.ORDER_USER_GROUP + 56; }
++
++    @Override
++    public InformationServiceController<VmRef> getInformationServiceController(VmRef ref) {
++        return new StapInformationController();
++    }
++}
+diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapPanel.java b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapPanel.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapPanel.java
+@@ -0,0 +1,174 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.gui;
++
++import java.awt.*;
++import java.awt.List;
++import java.beans.PropertyChangeEvent;
++import java.beans.PropertyChangeListener;
++import java.util.*;
++
++import com.redhat.thermostat.client.swing.SwingComponent;
++import com.redhat.thermostat.client.swing.components.HeaderPanel;
++import com.redhat.thermostat.client.swing.components.experimental.ThermostatChartPanel;
++import com.redhat.thermostat.client.swing.experimental.ComponentVisibilityNotifier;
++import com.redhat.thermostat.common.ActionNotifier;
++import com.redhat.thermostat.common.Duration;
++import com.redhat.thermostat.shared.locale.Translate;
++import com.redhat.thermostat.storage.model.DiscreteTimeData;
++import org.jfree.chart.ChartFactory;
++import org.jfree.chart.JFreeChart;
++import org.jfree.chart.axis.DateAxis;
++import org.jfree.chart.plot.PlotOrientation;
++import org.jfree.data.time.Millisecond;
++import org.jfree.data.time.TimeSeries;
++import org.jfree.data.time.TimeSeriesCollection;
++
++import javax.swing.*;
++
++/**
++ * Created by jmatsuok on 24/10/16.
++ */
++public class StapPanel extends StapView implements SwingComponent {
++
++    private static final Translate<LocaleResources> translator = LocaleResources.createLocalizer();
++    private Map<String, TimeSeriesCollection> collections = new HashMap<>();
++    private HeaderPanel visiblePanel;
++    private ThermostatChartPanel chartPanel;
++    private Duration duration;
++    private ActionNotifier<UserAction> userActionNotifier = new ActionNotifier<>(this);
++    private static final Color WHITE = new Color(255,255,255,0);
++    private static final Color BLACK = new Color(0,0,0,0);
++    private static final float TRANSPARENT = 0.0f;
++    private Map<String, JFreeChart> charts = new HashMap<>();
++
++    public StapPanel() {
++        super();
++        initializePanel();
++
++        new ComponentVisibilityNotifier().initialize(visiblePanel, notifier);
++    }
++
++    private void initializePanel() {
++        visiblePanel = new HeaderPanel();
++        visiblePanel.setHeader(translator.localize(LocaleResources.STAP));
++
++        JPanel p = initializeChartsPanel();
++        visiblePanel.setContent(p);
++    }
++
++    private JPanel initializeChartsPanel() {
++        JPanel p = new JPanel();
++        //JLabel h = new JLabel("Harambe");
++        JPanel detailsPanel = new JPanel();
++        duration = ThermostatChartPanel.DEFAULT_DATA_DISPLAY;
++        chartPanel = new ThermostatChartPanel(duration);
++        detailsPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
++        detailsPanel.setLayout(new BorderLayout());
++        chartPanel.addPropertyChangeListener(ThermostatChartPanel.PROPERTY_VISIBLE_TIME_RANGE, new PropertyChangeListener() {
++            @Override
++            public void propertyChange(PropertyChangeEvent evt) {
++                duration = (Duration) evt.getNewValue();
++                userActionNotifier.fireAction(UserAction.USER_CHANGED_TIME_RANGE);
++            }
++        });
++        detailsPanel.add(chartPanel, BorderLayout.CENTER);
++        return detailsPanel;
++    }
++
++    private JFreeChart createChart(String name, TimeSeriesCollection collection) {
++        JFreeChart chart = ChartFactory.createXYLineChart(
++                name,
++                "",
++                translator.localize(LocaleResources.STAP_Y_AXIS).getContents(),
++                collection,
++                PlotOrientation.VERTICAL,
++                true,
++                false,
++                false);
++
++        chart.getPlot().setBackgroundPaint(WHITE);
++        chart.getPlot().setBackgroundImageAlpha(TRANSPARENT);
++        chart.getPlot().setOutlinePaint(BLACK);
++
++        chart.getXYPlot().setDomainAxis(new DateAxis(translator.localize(LocaleResources.STAP_X_AXIS).getContents()));
++        chart.getXYPlot().getRangeAxis().setLowerBound(0.0);
++
++        charts.put(name, chart);
++
++        return chart;
++    }
++
++    @Override
++    public void addChart(String tag) {
++        TimeSeriesCollection collection = new TimeSeriesCollection();
++
++        collection.addSeries(new TimeSeries(translator.localize(LocaleResources.STAP_HITS).getContents()));
++
++        collections.put(tag, collection);
++
++        chartPanel.addChart(createChart(tag, collection));
++        chartPanel.revalidate();
++        chartPanel.repaint();
++    }
++
++    public void addData(final String tag, final java.util.List<DiscreteTimeData<Double>[]> data) {
++        final java.util.List<DiscreteTimeData<Double>[]> copy = new ArrayList<>(data);
++        final TimeSeriesCollection collection = collections.get(tag);
++        SwingUtilities.invokeLater(new Runnable() {
++            @Override
++            public void run() {
++                for (DiscreteTimeData<Double>[] d : copy) {
++                    for (int j = 0; j < 3; j++) {
++                        if (null == collection.getSeries(j).getDataItem(new Millisecond(new Date(d[j].getTimeInMillis())))) {
++                            collection.getSeries(j).add(new Millisecond(new Date(d[j].getTimeInMillis())), d[j].getData());
++                        }
++                    }
++                }
++            }
++        });
++    }
++
++    @Override
++    public Component getUiComponent() {
++        return visiblePanel;
++    }
++
++    private enum UserAction {
++        USER_CHANGED_TIME_RANGE
++    }
++}
+diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapView.java b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapView.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapView.java
+@@ -0,0 +1,48 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.gui;
++
++import com.redhat.thermostat.client.core.views.BasicView;
++import com.redhat.thermostat.client.core.views.UIComponent;
++
++/**
++ * Created by jmatsuok on 24/10/16.
++ */
++public abstract class StapView extends BasicView implements UIComponent {
++
++    public abstract void addChart(String tag);
++}
+diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapViewProvider.java b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapViewProvider.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapViewProvider.java
+@@ -0,0 +1,47 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.gui;
++
++import com.redhat.thermostat.client.core.views.ViewProvider;
++
++/**
++ * Created by jmatsuok on 24/10/16.
++ */
++public interface StapViewProvider extends ViewProvider {
++    @Override
++    public StapView createView();
++}
+diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/SwingStapViewProvider.java b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/SwingStapViewProvider.java
+new file mode 100644
+--- /dev/null
++++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/SwingStapViewProvider.java
+@@ -0,0 +1,44 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
++package com.redhat.thermostat.stap.gui;
++
++public class SwingStapViewProvider implements StapViewProvider {
++    @Override
++    public StapView createView() {
++        return null;
++    }
++}
+\ No newline at end of file
+diff --git a/stap-command/gui/src/main/resources/com/redhat/thermostat/stap/gui/internal/strings.properties b/stap-command/gui/src/main/resources/com/redhat/thermostat/stap/gui/internal/strings.properties
+new file mode 100644
+--- /dev/null
++++ b/stap-command/gui/src/main/resources/com/redhat/thermostat/stap/gui/internal/strings.properties
+@@ -0,0 +1,6 @@
++STAP = SystemTap
++STAP_X_AXIS = Time
++STAP_Y_AXIS = Number of Packets
++STAP_HITS = TCP packets
++STAP_MISSES = miss
++STAP_FOREIGN = foreign
+\ No newline at end of file
+diff --git a/stap-command/pom.xml b/stap-command/pom.xml
+new file mode 100644
+--- /dev/null
++++ b/stap-command/pom.xml
+@@ -0,0 +1,62 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!--
++
++ Copyright 2012-2016 Red Hat, Inc.
++
++ This file is part of Thermostat.
++
++ Thermostat is free software; you can redistribute it and/or modify
++ it under the terms of the GNU General Public License as published
++ by the Free Software Foundation; either version 2, or (at your
++ option) any later version.
++
++ Thermostat is distributed in the hope that it will be useful, but
++ WITHOUT ANY WARRANTY; without even the implied warranty of
++ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ General Public License for more details.
++
++ You should have received a copy of the GNU General Public License
++ along with Thermostat; see the file COPYING.  If not see
++ <http://www.gnu.org/licenses/>.
++
++ Linking this code with other modules is making a combined work
++ based on this code.  Thus, the terms and conditions of the GNU
++ General Public License cover the whole combination.
++
++ As a special exception, the copyright holders of this code give
++ you permission to link this code with independent modules to
++ produce an executable, regardless of the license terms of these
++ independent modules, and to copy and distribute the resulting
++ executable under terms of your choice, provided that you also
++ meet, for each linked independent module, the terms and conditions
++ of the license of that module.  An independent module is a module
++ which is not derived from or based on this code.  If you modify
++ this code, you may extend this exception to your version of the
++ library, but you are not obligated to do so.  If you do not wish
++ to do so, delete this exception statement from your version.
++
++-->
++<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++  <modelVersion>4.0.0</modelVersion>
++  <parent>
++    <groupId>com.redhat.thermostat</groupId>
++    <artifactId>thermostat</artifactId>
++    <version>1.99.12-SNAPSHOT</version>
++  </parent>
++  <artifactId>thermostat-stap</artifactId>
++  <packaging>pom</packaging>
++  
++  <name>Thermostat SystemTap command</name>
++  
++  <description>Allows running system tap scrips from thermostat</description>
++
++  <modules>
++    <module>command</module>
++    <module>distribution</module>
++    <module>agent</module>
++    <module>common</module>
++    <module>gui</module>
++  </modules>
++
++</project>
++
+diff --git a/storage/core/src/main/java/com/redhat/thermostat/storage/internal/statement/TerminalNode.java b/storage/core/src/main/java/com/redhat/thermostat/storage/internal/statement/TerminalNode.java
+--- a/storage/core/src/main/java/com/redhat/thermostat/storage/internal/statement/TerminalNode.java
++++ b/storage/core/src/main/java/com/redhat/thermostat/storage/internal/statement/TerminalNode.java
+@@ -110,6 +110,10 @@
+         } else {
+             // primitive types or primitive list types
+             if (param.getType() != patch.getType()) {
++                System.out.println(patch.toString());
++                System.out.println(param.getValue().toString());
++                System.out.println(patch.getType());
++                System.out.println(param.getType());
+                 IllegalArgumentException iae = constructIllegalArgumentException(patch, param);
+                 throw new IllegalPatchException(iae);
+             }
+diff --git a/web/war/pom.xml b/web/war/pom.xml
+--- a/web/war/pom.xml
++++ b/web/war/pom.xml
+@@ -227,6 +227,11 @@
+       <artifactId>thermostat-vm-profiler-common</artifactId>
+       <version>${project.version}</version>
+     </dependency>
++    <dependency>
++      <groupId>com.redhat.thermostat</groupId>
++      <artifactId>thermostat-stap-common</artifactId>
++      <version>${project.version}</version>
++    </dependency>
+   </dependencies>
+ 
+   <build>

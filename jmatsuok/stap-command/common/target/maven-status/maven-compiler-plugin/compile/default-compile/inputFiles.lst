@@ -1,0 +1,5 @@
+/home/jmatsuok/IdeaProjects/thermostat/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapData.java
+/home/jmatsuok/IdeaProjects/thermostat/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/StapDAO.java
+/home/jmatsuok/IdeaProjects/thermostat/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImpl.java
+/home/jmatsuok/IdeaProjects/thermostat/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImplStatementDescriptorRegistration.java
+/home/jmatsuok/IdeaProjects/thermostat/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOCategoryRegistration.java

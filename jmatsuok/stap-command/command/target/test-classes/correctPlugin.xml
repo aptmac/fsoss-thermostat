@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://icedtea.classpath.org/thermostat/plugins/v1.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://icedtea.classpath.org/thermostat/plugins/v1.0 thermostat-plugin.xsd">
+  <extensions>
+    <extension>
+      <name>test</name>
+      <bundles>
+        <bundle><symbolic-name>foo</symbolic-name><version>1</version></bundle>
+        <bundle><symbolic-name>bar</symbolic-name><version>2</version></bundle>
+        <bundle><symbolic-name>baz</symbolic-name><version>3</version></bundle>
+      </bundles>
+    </extension>
+  </extensions>
+</plugin>
