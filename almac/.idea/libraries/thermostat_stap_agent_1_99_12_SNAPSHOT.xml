@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="thermostat-stap-agent-1.99.12-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../jmatsuok/stap-command/agent/target/thermostat-stap-agent-1.99.12-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

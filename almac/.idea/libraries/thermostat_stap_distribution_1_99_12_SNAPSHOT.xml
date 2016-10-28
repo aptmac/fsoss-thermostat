@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="thermostat-stap-distribution-1.99.12-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../jmatsuok/stap-command/distribution/target/thermostat-stap-distribution-1.99.12-SNAPSHOT.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

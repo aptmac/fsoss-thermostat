@@ -1,0 +1,8 @@
+RULE example rule
+CLASS Hello
+METHOD main
+AT ENTRY
+IF TRUE
+DO 
+    traceln("All your base are belong to us!");
+ENDRULE
