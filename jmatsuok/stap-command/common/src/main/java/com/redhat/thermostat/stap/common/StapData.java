@@ -49,6 +49,7 @@ public class StapData extends BasePojo implements TimeStampedPojo {
     private String VmId;
     private long timeStamp;
     private String stapMetric;
+    private String id;
 
     public StapData() {
         super(null);
@@ -88,6 +89,16 @@ public class StapData extends BasePojo implements TimeStampedPojo {
     @Persist
     public void setStapMetric(String packet) {
         this.stapMetric = packet;
+    }
+
+    @Persist
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @Persist
+    public String getId() {
+        return id;
     }
 
 }

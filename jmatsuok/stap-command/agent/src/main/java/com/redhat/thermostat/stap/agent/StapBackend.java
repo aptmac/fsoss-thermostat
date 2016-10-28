@@ -59,9 +59,7 @@ import java.util.concurrent.TimeUnit;
 
 public class StapBackend extends BaseBackend {
 
-    private static final String SCRIPT_TEST = "/home/Jmatsuok/IdeaProjects/FSOSS-2016/scripts/thermostat-stap.sh";
     private static final String SCRIPT_OUTPUT = "/home/jmatsuok/stap-out.txt";
-    private static final String STAP_SCRIPT = "/home/Jmatsuok/IdeaProjects/FSOSS-2016/scripts/tcp.stp";
     private ApplicationService appService;
     private StapDAO stapDAO;
     private WriterID writerId;
@@ -94,40 +92,16 @@ public class StapBackend extends BaseBackend {
                 saveData(parsedRawOutput(parseOutput()));
             }
         });
-        started = true;
         timer.start();
-        try {
-            runScript();
-        } catch (IOException ioe) {
-            System.out.println(ioe.getMessage());
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
+        started = true;
         return true;
-    }
-
-    private void saveData(List<StapData> data) {
-        for (StapData s : data) {
-            stapDAO.saveStapData(s);
-        }
-    }
-
-    private List<StapData> parsedRawOutput(List<String> rawOutput) {
-        List<StapData> parsedOutput = new ArrayList<StapData>();
-        for (String s : rawOutput) {
-            String[] raw = sanitize(s.split(" "));
-            StapData st = new StapData();
-            st.setAgentId(raw[0]+":"+raw[2]);
-            st.setVmId(raw[1]+":"+raw[3]);
-            st.setStapMetric(raw[4]+raw[5]+raw[6]+raw[7]+raw[8]);
-            parsedOutput.add(st);
-        }
-        return parsedOutput;
     }
 
     @Override
     public boolean deactivate() {
-        return false;
+        started = false;
+        timer.stop();
+        return true;
     }
 
     @Override
@@ -152,22 +126,6 @@ public class StapBackend extends BaseBackend {
         return sanitized;
     }
 
-    private void runScript() throws IOException {
-        List<String> tmp = new ArrayList<String>();
-        Process proc = null;
-        tmp.add(SCRIPT_TEST);
-        try {
-            ProcessBuilder pb = new ProcessBuilder(SCRIPT_TEST, STAP_SCRIPT);
-            proc = pb.start();
-        } catch (IOException ioe) {
-            System.out.println(ioe.getMessage());
-            throw ioe;
-        }
-        finally {
-            proc.destroy();
-        }
-    }
-
     private List<String> parseOutput() {
         String line = null;
         List<String> lines = new ArrayList<String>();
@@ -190,4 +148,26 @@ public class StapBackend extends BaseBackend {
 
         return lines;
     }
+
+
+    private void saveData(List<StapData> data) {
+        for (StapData s : data) {
+            stapDAO.saveStapData(s);
+        }
+    }
+
+    private List<StapData> parsedRawOutput(List<String> rawOutput) {
+        List<StapData> parsedOutput = new ArrayList<StapData>();
+        for (String s : rawOutput) {
+            String[] raw = sanitize(s.split(" "));
+            StapData st = new StapData();
+            st.setAgentId(raw[0]+":"+raw[2]);
+            st.setVmId(raw[1]+":"+raw[3]);
+            st.setStapMetric(raw[4]+raw[5]+raw[6]+raw[7]+raw[8]);
+            st.setId("1");
+            parsedOutput.add(st);
+        }
+        return parsedOutput;
+    }
+
 }

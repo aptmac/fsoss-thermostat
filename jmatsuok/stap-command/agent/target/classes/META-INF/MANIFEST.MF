@@ -3,7 +3,7 @@ Bundle-Description: Allows running system tap scrips from thermostat
 Bundle-SymbolicName: com.redhat.thermostat.stap.agent
 Built-By: jmatsuok
 Bundle-ManifestVersion: 2
-Bnd-LastModified: 1477491400834
+Bnd-LastModified: 1477625444427
 Bundle-Vendor: Red Hat, Inc.
 Import-Package: com.redhat.thermostat.backend,com.redhat.thermostat.co
  mmon,com.redhat.thermostat.stap.agent,com.redhat.thermostat.stap.comm

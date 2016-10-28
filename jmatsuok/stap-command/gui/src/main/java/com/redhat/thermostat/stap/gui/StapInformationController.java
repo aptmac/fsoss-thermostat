@@ -38,8 +38,11 @@ package com.redhat.thermostat.stap.gui;
 
 import com.redhat.thermostat.client.core.controllers.InformationServiceController;
 import com.redhat.thermostat.client.core.views.UIComponent;
+import com.redhat.thermostat.common.ApplicationService;
+import com.redhat.thermostat.common.Timer;
 import com.redhat.thermostat.shared.locale.LocalizedString;
 import com.redhat.thermostat.shared.locale.Translate;
+import com.redhat.thermostat.stap.common.StapDAO;
 import com.redhat.thermostat.storage.core.VmRef;
 import com.redhat.thermostat.storage.model.DiscreteTimeData;
 import com.redhat.thermostat.stap.common.StapData;
@@ -48,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by jmatsuok on 24/10/16.
@@ -56,14 +60,34 @@ public class StapInformationController implements InformationServiceController<V
 
     private Translate<LocaleResources> t = LocaleResources.createLocalizer();
     private StapView view;
+    private StapDAO dao;
+    private ApplicationService appservice;
 
     public StapInformationController(final StapView view) {
         this.view = view;
     }
 
-    public StapInformationController() {
+    public StapInformationController(ApplicationService applicationService, StapDAO stapdao) {
+        System.out.println("Are we getting here?");
         this.view = new StapPanel();
-        view.addChart("Hello");
+        this.appservice = applicationService;
+        this.dao = stapdao;
+        if(applicationService == null || stapdao == null) {
+            return;
+        }
+
+        Timer t = appservice.getTimerFactory().createTimer();
+        t.setInitialDelay(0);
+        t.setDelay(5);
+        t.setSchedulingType(Timer.SchedulingType.FIXED_DELAY);
+        t.setTimeUnit(TimeUnit.SECONDS);
+        t.setAction(new Runnable() {
+            @Override
+            public void run() {
+                view.updateData(dao.getCount("127.0.0.1:27518"), "127.0.0.1:27518");
+            }
+        });
+        t.start();
     }
 
     @Override

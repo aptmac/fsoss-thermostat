@@ -1,0 +1,4 @@
+probe tcp.receive {
+      printf(" %15s %15s  %5d  %5d  %d  %d  %d  %d  %d  %d\n",
+		               saddr, daddr, sport, dport, urg, ack, psh, rst, syn, fin)
+}

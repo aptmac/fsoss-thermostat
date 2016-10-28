@@ -28,7 +28,17 @@ diff --git a/distribution/pom.xml b/distribution/pom.xml
 diff --git a/pom.xml b/pom.xml
 --- a/pom.xml
 +++ b/pom.xml
-@@ -66,7 +66,7 @@
+@@ -35,8 +35,7 @@
+  library, but you are not obligated to do so.  If you do not wish
+  to do so, delete this exception statement from your version.
+ 
+--->
+-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
++--><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   <modelVersion>4.0.0</modelVersion>
+ 
+   <groupId>com.redhat.thermostat</groupId>
+@@ -66,7 +65,7 @@
        <properties>
          <script.extension>.sh</script.extension>
          <c.compiler>gcc</c.compiler>
@@ -37,7 +47,7 @@ diff --git a/pom.xml b/pom.xml
          <jni.platform>linux</jni.platform>
          <sharedlib.prefix>lib</sharedlib.prefix>
          <sharedlib.suffix>.so</sharedlib.suffix>
-@@ -84,7 +84,7 @@
+@@ -84,7 +83,7 @@
          <cflags>-std=c99</cflags>
          <cygwin.dir>c:/cygwin64</cygwin.dir>
          <jni.platform>win32</jni.platform>
@@ -46,7 +56,7 @@ diff --git a/pom.xml b/pom.xml
          <sharedlib.suffix>.dll</sharedlib.suffix>
        </properties>
      </profile>
-@@ -381,6 +381,7 @@
+@@ -381,6 +380,7 @@
      <module>integration-tests</module>
      <module>dev</module>
      <module>dependency-tool</module>
@@ -54,7 +64,7 @@ diff --git a/pom.xml b/pom.xml
    </modules>
  
    <build>
-@@ -802,4 +803,4 @@
+@@ -802,4 +802,4 @@
      <url>http://icedtea.classpath.org/hg/thermostat</url>
    </scm>
  
@@ -185,7 +195,7 @@ diff --git a/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/S
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/StapBackend.java
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,173 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -247,9 +257,7 @@ new file mode 100644
 +
 +public class StapBackend extends BaseBackend {
 +
-+    private static final String SCRIPT_TEST = "/home/Jmatsuok/IdeaProjects/FSOSS-2016/scripts/thermostat-stap.sh";
 +    private static final String SCRIPT_OUTPUT = "/home/jmatsuok/stap-out.txt";
-+    private static final String STAP_SCRIPT = "/home/Jmatsuok/IdeaProjects/FSOSS-2016/scripts/tcp.stp";
 +    private ApplicationService appService;
 +    private StapDAO stapDAO;
 +    private WriterID writerId;
@@ -282,41 +290,16 @@ new file mode 100644
 +                saveData(parsedRawOutput(parseOutput()));
 +            }
 +        });
-+        started = true;
 +        timer.start();
-+        try {
-+            runScript();
-+        } catch (IOException ioe) {
-+            System.out.println(ioe.getMessage());
-+        } catch (Exception e) {
-+            System.out.println(e.getMessage());
-+        }
++        started = true;
 +        return true;
-+    }
-+
-+    private void saveData(List<StapData> data) {
-+        for (StapData s : data) {
-+            stapDAO.saveStapData(s);
-+        }
-+    }
-+
-+    private List<StapData> parsedRawOutput(List<String> rawOutput) {
-+        List<StapData> parsedOutput = new ArrayList<StapData>();
-+        for (String s : rawOutput) {
-+            String[] raw = sanitize(s.split(" "));
-+            StapData st = new StapData();
-+            st.setAgentId(raw[0]+":"+raw[2]);
-+            st.setVmId(raw[1]+":"+raw[3]);
-+            st.setStapMetric(raw[4]+raw[5]+raw[6]+raw[7]+raw[8]);
-+            st.setId("1");
-+            parsedOutput.add(st);
-+        }
-+        return parsedOutput;
 +    }
 +
 +    @Override
 +    public boolean deactivate() {
-+        return false;
++        started = false;
++        timer.stop();
++        return true;
 +    }
 +
 +    @Override
@@ -341,22 +324,6 @@ new file mode 100644
 +        return sanitized;
 +    }
 +
-+    private void runScript() throws IOException {
-+        List<String> tmp = new ArrayList<String>();
-+        Process proc = null;
-+        tmp.add(SCRIPT_TEST);
-+        try {
-+            ProcessBuilder pb = new ProcessBuilder(SCRIPT_TEST, STAP_SCRIPT);
-+            proc = pb.start();
-+        } catch (IOException ioe) {
-+            System.out.println(ioe.getMessage());
-+            throw ioe;
-+        }
-+        finally {
-+            proc.destroy();
-+        }
-+    }
-+
 +    private List<String> parseOutput() {
 +        String line = null;
 +        List<String> lines = new ArrayList<String>();
@@ -379,12 +346,70 @@ new file mode 100644
 +
 +        return lines;
 +    }
++
++
++    private void saveData(List<StapData> data) {
++        for (StapData s : data) {
++            stapDAO.saveStapData(s);
++        }
++    }
++
++    private List<StapData> parsedRawOutput(List<String> rawOutput) {
++        List<StapData> parsedOutput = new ArrayList<StapData>();
++        for (String s : rawOutput) {
++            String[] raw = sanitize(s.split(" "));
++            StapData st = new StapData();
++            st.setAgentId(raw[0]+":"+raw[2]);
++            st.setVmId(raw[1]+":"+raw[3]);
++            st.setStapMetric(raw[4]+raw[5]+raw[6]+raw[7]+raw[8]);
++            st.setId("1");
++            parsedOutput.add(st);
++        }
++        return parsedOutput;
++    }
++
 +}
 diff --git a/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/internal/Activator.java b/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/internal/Activator.java
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/agent/src/main/java/com/redhat/thermostat/stap/agent/internal/Activator.java
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,98 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
 +package com.redhat.thermostat.stap.agent.internal;
 +
 +import com.redhat.thermostat.backend.Backend;
@@ -417,7 +442,7 @@ new file mode 100644
 +                BackendService.class,
 +                StapDAO.class,
 +                ApplicationService.class,
-+                WriterID.class, // numa backend uses it
++                WriterID.class,
 +        };
 +        tracker = new MultipleServiceTracker(context, deps, new MultipleServiceTracker.Action() {
 +
@@ -595,7 +620,7 @@ diff --git a/stap-command/command/src/main/java/com/redhat/thermostat/stap/comma
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/command/src/main/java/com/redhat/thermostat/stap/command/internal/StapCommand.java
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,98 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -663,10 +688,6 @@ new file mode 100644
 +        })
 +public class StapCommand implements Command {
 +
-+    private static final String SCRIPT_PATH = "/home/Jmatsuok/FSOSS-2016/stap/gc.stp";
-+    private static final String SCRIPT_OUTPUT = "/home/Jmatsuok/packet-output.txt";
-+    public static final String NAME = "stap";
-+
 +    private StapDAO stapDao;
 +    private DependencyServices dependencyServices = new DependencyServices();
 +
@@ -682,9 +703,6 @@ new file mode 100644
 +        long count = stapDao.getCount(ctx.getArguments().getNonOptionArguments().get(0));
 +        System.out.println(ctx.getArguments().getNonOptionArguments().get(0) +
 +                " Received " + count + " Packets");
-+
-+        //System.out.println(stapDao.getDistinctIPs("1").toString());
-+
 +    }
 +
 +    public boolean isStorageRequired() {
@@ -1137,7 +1155,7 @@ diff --git a/stap-command/common/src/main/java/com/redhat/thermostat/stap/common
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/common/src/main/java/com/redhat/thermostat/stap/common/internal/StapDAOImpl.java
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,166 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -1208,8 +1226,6 @@ new file mode 100644
 +    Category<AggregateCount> aggregateCountCategory;
 +
 +    static Key<String> KEY_STAP_METRIC = new Key<>("stapMetric");
-+    //static Key<String> SOURCE_IP = new Key<>("srcIP");
-+    //static Key<String> DEST_IP = new Key<>("destIP");
 +
 +    static final Category<StapData> STAP_CATEGORY = new Category<StapData>(
 +            "stap-metrics",
@@ -1231,8 +1247,6 @@ new file mode 100644
 +            "QUERY-DISTINCT(" + Key.AGENT_ID.getName() +") " + STAP_CATEGORY.getName()
 +            + " WHERE '" + Key.ID.getName() + "' = ?s";
 +
-+    //static final String QUERY_UNIQUE = ""
-+    //        + "QUERY DISTINCT" + STAP_CATEGORY.getName();
 +    private static final Logger logger = LoggingUtils.getLogger(StapDAOImpl.class);
 +
 +    @Reference
@@ -1728,7 +1742,43 @@ diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/Local
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/LocaleResources.java
-@@ -0,0 +1,22 @@
+@@ -0,0 +1,58 @@
++/*
++ * Copyright 2012-2016 Red Hat, Inc.
++ *
++ * This file is part of Thermostat.
++ *
++ * Thermostat is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; either version 2, or (at your
++ * option) any later version.
++ *
++ * Thermostat is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with Thermostat; see the file COPYING.  If not see
++ * <http://www.gnu.org/licenses/>.
++ *
++ * Linking this code with other modules is making a combined work
++ * based on this code.  Thus, the terms and conditions of the GNU
++ * General Public License cover the whole combination.
++ *
++ * As a special exception, the copyright holders of this code give
++ * you permission to link this code with independent modules to
++ * produce an executable, regardless of the license terms of these
++ * independent modules, and to copy and distribute the resulting
++ * executable under terms of your choice, provided that you also
++ * meet, for each linked independent module, the terms and conditions
++ * of the license of that module.  An independent module is a module
++ * which is not derived from or based on this code.  If you modify
++ * this code, you may extend this exception to your version of the
++ * library, but you are not obligated to do so.  If you do not wish
++ * to do so, delete this exception statement from your version.
++ */
++
 +package com.redhat.thermostat.stap.gui;
 +
 +import com.redhat.thermostat.shared.locale.Translate;
@@ -1756,7 +1806,7 @@ diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapI
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationController.java
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,108 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -1827,12 +1877,11 @@ new file mode 100644
 +    }
 +
 +    public StapInformationController(ApplicationService applicationService, StapDAO stapdao) {
++        System.out.println("Are we getting here?");
 +        this.view = new StapPanel();
 +        this.appservice = applicationService;
-+        view.addChart("127.0.0.1:53078");
 +        this.dao = stapdao;
 +        if(applicationService == null || stapdao == null) {
-+            System.out.println("Harambe");
 +            return;
 +        }
 +
@@ -1847,8 +1896,7 @@ new file mode 100644
 +                view.updateData(dao.getCount("127.0.0.1:27518"), "127.0.0.1:27518");
 +            }
 +        });
-+        long data = dao.getCount("127.0.0.1:27518");
-+        System.out.println(data);
++        t.start();
 +    }
 +
 +    @Override
@@ -1871,7 +1919,7 @@ diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapI
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapInformationService.java
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,80 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -1939,11 +1987,6 @@ new file mode 100644
 +    @Reference
 +    private StapDAO stapDao;
 +
-+    /*Activate
-+    public void activate() {
-+        sc = new StapInformationController(appservice, stapDao);
-+    }*/
-+
 +    @Override
 +    public Filter<VmRef> getFilter() {
 +        return new AllPassFilter<>();
@@ -1961,7 +2004,7 @@ diff --git a/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapP
 new file mode 100644
 --- /dev/null
 +++ b/stap-command/gui/src/main/java/com/redhat/thermostat/stap/gui/StapPanel.java
-@@ -0,0 +1,191 @@
+@@ -0,0 +1,175 @@
 +/*
 + * Copyright 2012-2016 Red Hat, Inc.
 + *
@@ -2110,36 +2153,20 @@ new file mode 100644
 +
 +    @Override
 +    public void updateData(long l, String tag) {
-+        System.out.println("Received Data: "+l);
-+        final DiscreteTimeData<Long> dtd = new DiscreteTimeData<>(System.currentTimeMillis(), l);
++        if (collections.get(tag) == null) {
++            addChart(tag);
++        }
++        final DiscreteTimeData<Double> dtd = new DiscreteTimeData<>(System.currentTimeMillis(), new Double(l));
 +        final TimeSeriesCollection c = collections.get(tag);
++        if (c == null) {
++            System.out.println("Collection not found");
++            return;
++        }
 +        SwingUtilities.invokeLater(new Runnable() {
 +            @Override
 +            public void run() {
-+                for (int j = 0; j < 3; j++) {
-+                    if (null == c.getSeries(j).getDataItem(new Millisecond(new Date(dtd.getTimeInMillis())))) {
-+                        c.getSeries(j).add(new Millisecond(new Date(dtd.getTimeInMillis())), dtd.getData());
-+                    }
-+                }
-+            }
-+        });
-+        chartPanel.revalidate();
-+        chartPanel.repaint();
-+    }
-+
-+    public void addData(String tag, final java.util.List<DiscreteTimeData<Double>[]> data) {
-+        final java.util.List<DiscreteTimeData<Double>[]> copy = new ArrayList<>(data);
-+        final TimeSeriesCollection collection = collections.get(tag);
-+        SwingUtilities.invokeLater(new Runnable() {
-+            @Override
-+            public void run() {
-+                for (DiscreteTimeData<Double>[] d : copy) {
-+                    for (int j = 0; j < 3; j++) {
-+                        if (null == collection.getSeries(j).getDataItem(new Millisecond(new Date(d[j].getTimeInMillis())))) {
-+                            collection.getSeries(j).add(new Millisecond(new Date(d[j].getTimeInMillis())), d[j].getData());
-+                        }
-+                    }
-+                }
++                TimeSeries ts = c.getSeries(0);
++                ts.add(new Millisecond(new Date(dtd.getTimeInMillis())), dtd.getData());
 +            }
 +        });
 +    }

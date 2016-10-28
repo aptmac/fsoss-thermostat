@@ -6,5 +6,6 @@ com/redhat/thermostat/stap/gui/StapPanel$2.class
 com/redhat/thermostat/stap/gui/StapView.class
 com/redhat/thermostat/stap/gui/StapInformationService.class
 com/redhat/thermostat/stap/gui/SwingStapViewProvider.class
+com/redhat/thermostat/stap/gui/StapInformationController$1.class
 com/redhat/thermostat/stap/gui/LocaleResources.class
 com/redhat/thermostat/stap/gui/StapInformationController.class

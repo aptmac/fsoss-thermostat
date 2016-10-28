@@ -68,8 +68,6 @@ public class StapDAOImpl extends AbstractDao implements StapDAO {
     Category<AggregateCount> aggregateCountCategory;
 
     static Key<String> KEY_STAP_METRIC = new Key<>("stapMetric");
-    //static Key<String> SOURCE_IP = new Key<>("srcIP");
-    //static Key<String> DEST_IP = new Key<>("destIP");
 
     static final Category<StapData> STAP_CATEGORY = new Category<StapData>(
             "stap-metrics",
@@ -91,8 +89,6 @@ public class StapDAOImpl extends AbstractDao implements StapDAO {
             "QUERY-DISTINCT(" + Key.AGENT_ID.getName() +") " + STAP_CATEGORY.getName()
             + " WHERE '" + Key.ID.getName() + "' = ?s";
 
-    //static final String QUERY_UNIQUE = ""
-    //        + "QUERY DISTINCT" + STAP_CATEGORY.getName();
     private static final Logger logger = LoggingUtils.getLogger(StapDAOImpl.class);
 
     @Reference
@@ -149,10 +145,11 @@ public class StapDAOImpl extends AbstractDao implements StapDAO {
     }
 
     @Override
-    public Set<String> getDistinctIPs() {
+    public Set<String> getDistinctIPs(final String id) {
         DistinctResult dr = executeQuery(new AbstractDaoQuery<DistinctResult>(storage, aggregateCategory, QUERY_ALL) {
             @Override
             public PreparedStatement<DistinctResult> customize(PreparedStatement<DistinctResult> preparedStatement) {
+                preparedStatement.setString(0, id);
                 return preparedStatement;
             }
         }).head();

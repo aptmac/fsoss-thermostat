@@ -45,4 +45,6 @@ import com.redhat.thermostat.client.core.views.UIComponent;
 public abstract class StapView extends BasicView implements UIComponent {
 
     public abstract void addChart(String tag);
+
+    public abstract void updateData(long l, String tag);
 }

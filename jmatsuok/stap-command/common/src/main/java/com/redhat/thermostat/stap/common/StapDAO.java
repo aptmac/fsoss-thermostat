@@ -52,6 +52,6 @@ public interface StapDAO {
 
     List<StapData> getAll();
 
-    Set<String> getDistinctIPs();
+    Set<String> getDistinctIPs(final String id);
 
 }

@@ -92,8 +92,6 @@ public class StapPanel extends StapView implements SwingComponent {
     }
 
     private JPanel initializeChartsPanel() {
-        JPanel p = new JPanel();
-        //JLabel h = new JLabel("Harambe");
         JPanel detailsPanel = new JPanel();
         duration = ThermostatChartPanel.DEFAULT_DATA_DISPLAY;
         chartPanel = new ThermostatChartPanel(duration);
@@ -146,19 +144,22 @@ public class StapPanel extends StapView implements SwingComponent {
         chartPanel.repaint();
     }
 
-    public void addData(final String tag, final java.util.List<DiscreteTimeData<Double>[]> data) {
-        final java.util.List<DiscreteTimeData<Double>[]> copy = new ArrayList<>(data);
-        final TimeSeriesCollection collection = collections.get(tag);
+    @Override
+    public void updateData(long l, String tag) {
+        if (collections.get(tag) == null) {
+            addChart(tag);
+        }
+        final DiscreteTimeData<Double> dtd = new DiscreteTimeData<>(System.currentTimeMillis(), new Double(l));
+        final TimeSeriesCollection c = collections.get(tag);
+        if (c == null) {
+            System.out.println("Collection not found");
+            return;
+        }
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                for (DiscreteTimeData<Double>[] d : copy) {
-                    for (int j = 0; j < 3; j++) {
-                        if (null == collection.getSeries(j).getDataItem(new Millisecond(new Date(d[j].getTimeInMillis())))) {
-                            collection.getSeries(j).add(new Millisecond(new Date(d[j].getTimeInMillis())), d[j].getData());
-                        }
-                    }
-                }
+                TimeSeries ts = c.getSeries(0);
+                ts.add(new Millisecond(new Date(dtd.getTimeInMillis())), dtd.getData());
             }
         });
     }

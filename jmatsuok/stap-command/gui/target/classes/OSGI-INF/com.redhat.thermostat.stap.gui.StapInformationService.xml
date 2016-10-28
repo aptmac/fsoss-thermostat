@@ -7,4 +7,6 @@
     <property name="com.redhat.thermostat.client.core.InformationService.serviceID" value="com.redhat.thermostat.stap.gui.StapInformationService"/>
     <property name="GenericClassName" value="com.redhat.thermostat.storage.core.VmRef"/>
     <property name="service.pid" value="com.redhat.thermostat.stap.gui.StapInformationService"/>
+    <reference name="appservice" interface="com.redhat.thermostat.common.ApplicationService" cardinality="1..1" policy="static" bind="bindAppservice" unbind="unbindAppservice"/>
+    <reference name="stapDao" interface="com.redhat.thermostat.stap.common.StapDAO" cardinality="1..1" policy="static" bind="bindStapDao" unbind="unbindStapDao"/>
 </scr:component>

@@ -65,10 +65,6 @@ import java.util.List;
         })
 public class StapCommand implements Command {
 
-    private static final String SCRIPT_PATH = "/home/Jmatsuok/FSOSS-2016/stap/gc.stp";
-    private static final String SCRIPT_OUTPUT = "/home/Jmatsuok/packet-output.txt";
-    public static final String NAME = "stap";
-
     private StapDAO stapDao;
     private DependencyServices dependencyServices = new DependencyServices();
 
@@ -84,8 +80,6 @@ public class StapCommand implements Command {
         long count = stapDao.getCount(ctx.getArguments().getNonOptionArguments().get(0));
         System.out.println(ctx.getArguments().getNonOptionArguments().get(0) +
                 " Received " + count + " Packets");
-        System.out.println(stapDao.getDistinctIPs().toString());
-
     }
 
     public boolean isStorageRequired() {

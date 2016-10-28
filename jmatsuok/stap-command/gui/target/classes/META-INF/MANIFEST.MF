@@ -3,7 +3,7 @@ Bundle-Description: Allows running system tap scrips from thermostat
 Bundle-SymbolicName: com.redhat.thermostat.stap.gui
 Built-By: jmatsuok
 Bundle-ManifestVersion: 2
-Bnd-LastModified: 1477491414136
+Bnd-LastModified: 1477625456533
 Bundle-Vendor: Red Hat, Inc.
 Import-Package: com.redhat.thermostat.client.core,com.redhat.thermosta
  t.client.core.controllers,com.redhat.thermostat.client.core.views,com
@@ -11,9 +11,10 @@ Import-Package: com.redhat.thermostat.client.core,com.redhat.thermosta
  mponents,com.redhat.thermostat.client.swing.components.experimental,c
  om.redhat.thermostat.client.swing.experimental,com.redhat.thermostat.
  common,com.redhat.thermostat.shared.locale,com.redhat.thermostat.stap
- .gui,com.redhat.thermostat.storage.core,com.redhat.thermostat.storage
- .model,javax.swing,javax.swing.border,org.jfree.chart,org.jfree.chart
- .axis,org.jfree.chart.plot,org.jfree.data.time,org.jfree.data.xy
+ .common,com.redhat.thermostat.stap.gui,com.redhat.thermostat.storage.
+ core,com.redhat.thermostat.storage.model,javax.swing,javax.swing.bord
+ er,org.jfree.chart,org.jfree.chart.axis,org.jfree.chart.plot,org.jfre
+ e.data.time,org.jfree.data.xy
 Service-Component: OSGI-INF/com.redhat.thermostat.stap.gui.StapInforma
  tionService.xml
 Tool: Bnd-0.0.238

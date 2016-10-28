@@ -39,8 +39,10 @@ package com.redhat.thermostat.stap.gui;
 import com.redhat.thermostat.client.core.InformationService;
 import com.redhat.thermostat.client.core.controllers.InformationServiceController;
 import com.redhat.thermostat.common.AllPassFilter;
+import com.redhat.thermostat.common.ApplicationService;
 import com.redhat.thermostat.common.Filter;
 import com.redhat.thermostat.common.Ordered;
+import com.redhat.thermostat.stap.common.StapDAO;
 import com.redhat.thermostat.storage.core.VmRef;
 import org.apache.felix.scr.annotations.*;
 
@@ -57,11 +59,11 @@ import org.apache.felix.scr.annotations.*;
         })
 public class StapInformationService implements InformationService<VmRef> {
 
-    /*@Activate
-    public void activate(final BundleContext ctx) {
-        StapViewProvider p = new SwingStapViewProvider();
-        ctx.registerService(StapViewProvider.class.getName(), p, null);
-    }*/
+    @Reference
+    private ApplicationService appservice;
+
+    @Reference
+    private StapDAO stapDao;
 
     @Override
     public Filter<VmRef> getFilter() {
@@ -73,6 +75,6 @@ public class StapInformationService implements InformationService<VmRef> {
 
     @Override
     public InformationServiceController<VmRef> getInformationServiceController(VmRef ref) {
-        return new StapInformationController();
+        return new StapInformationController(appservice, stapDao);
     }
 }

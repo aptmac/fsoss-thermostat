@@ -3,7 +3,7 @@ Bundle-Description: Allows running system tap scrips from thermostat
 Bundle-SymbolicName: com.redhat.thermostat.stap.common
 Built-By: jmatsuok
 Bundle-ManifestVersion: 2
-Bnd-LastModified: 1477488989466
+Bnd-LastModified: 1477625403666
 Bundle-Vendor: Red Hat, Inc.
 Import-Package: com.redhat.thermostat.common.utils,com.redhat.thermost
  at.stap.common,com.redhat.thermostat.storage.core,com.redhat.thermost
