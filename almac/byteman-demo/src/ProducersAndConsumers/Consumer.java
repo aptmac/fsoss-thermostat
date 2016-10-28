@@ -7,7 +7,7 @@ import java.util.ArrayList;
 class Consumer implements Runnable {
     private final ArrayList queue;
     private int duration;
-    private int numConsumed = 0;
+    private int numConsumed = 1;
 
     public Consumer(ArrayList<Integer> queue, int size, int speed) {
         this.queue = queue;
@@ -15,23 +15,24 @@ class Consumer implements Runnable {
     }
 
     @Override
-    public void run() {
+    public synchronized void run() {
         while (true) {
             while (queue.isEmpty()) {
                 sleep();
             }
             removeItem();
-            sleep();
-            if (numConsumed == 15) {
+            numConsumed++;
+            if (numConsumed > 15) {
                 Thread.currentThread().interrupt();
+            } else {
+                sleep();
             }
         }
     }
 
     private synchronized void removeItem() {
-        numConsumed++;
         queue.remove(0);
-        DemoGUI.getInstance().appendText("CONSUMER has consumed item #" + numConsumed + " \n");
+        DemoGUI.getInstance().appendText("CONSUMER has consumed item #" + (numConsumed) + " \n");
     }
 
     private void sleep() {

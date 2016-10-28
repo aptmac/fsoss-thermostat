@@ -18,17 +18,17 @@ class Producer implements Runnable {
     @Override
     public void run() {
         while (true) {
-                while (queue.size() == MAX) {
-                    sleep();
-                }
-                addItem();
+            while (queue.size() == MAX) {
                 sleep();
             }
+            addItem();
+        }
     }
 
     private synchronized void addItem() {
         int i = ThreadLocalRandom.current().nextInt(0, 3 + 1);
         queue.add(i);
+        sleep();
     }
 
     private void sleep() {

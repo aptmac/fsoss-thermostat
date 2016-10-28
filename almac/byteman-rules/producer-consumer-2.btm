@@ -48,7 +48,7 @@ BIND counterValue: int = readCounter("producer-sleep-counter-2")
 HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
 IF true
 DO
-send("producer", "2 - producer sleep()", counterValue);
+send("2 - producer", "2 - producer sleep()", counterValue);
 ENDRULE
 
 RULE send producer addItem method invocations to thermostat
@@ -59,7 +59,7 @@ BIND counterValue: int = readCounter("producer-add-counter-2")
 HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
 IF true
 DO
-send("producer", "2 - addItem()", counterValue);
+send("2 - producer", "2 - addItem()", counterValue);
 ENDRULE
 
 RULE send consumer sleep method invocations to thermostat
@@ -70,7 +70,7 @@ BIND counterValueSleep: int = readCounter("consumer-sleep-counter-2")
 HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
 IF true
 DO
-send("consumer", "2 - consumer sleep()", counterValueSleep);
+send("2 - consumer", "2 - consumer sleep()", counterValueSleep);
 ENDRULE
 
 RULE send consumer removeItem method invocations to thermostat
@@ -81,5 +81,5 @@ BIND counterValue: int = readCounter("consumer-remove-counter-2")
 HELPER org.jboss.byteman.thermostat.helper.ThermostatHelper
 IF true
 DO
-send("consumer", "2 - removeItem()", counterValue);
+send("2 - consumer", "2 - removeItem()", counterValue);
 ENDRULE
